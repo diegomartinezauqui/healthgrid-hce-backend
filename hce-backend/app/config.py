@@ -1,0 +1,41 @@
+"""
+Configuración centralizada de la aplicación.
+Lee variables de entorno desde .env usando pydantic-settings.
+"""
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    """Configuración del módulo HCE."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    # ─── Base de datos ────────────────────────────────────────────
+    DATABASE_URL: str = "postgresql+asyncpg://hce_user:hce_pass@localhost:5432/hce_db"
+
+    # ─── JWT ──────────────────────────────────────────────────────
+    JWT_SECRET_KEY: str = "super-secret-key-compartida-con-core"
+    JWT_ALGORITHM: str = "HS256"
+
+    # ─── Kafka ────────────────────────────────────────────────────
+    KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
+
+    # ─── URLs de otros módulos ────────────────────────────────────
+    CORE_BASE_URL: str = "http://localhost:8010/api/v1"
+    M6_BASE_URL: str = "http://localhost:8006/api"
+
+    # ─── Aplicación ───────────────────────────────────────────────
+    APP_ENV: str = "development"
+    APP_DEBUG: bool = True
+
+    @property
+    def is_production(self) -> bool:
+        return self.APP_ENV == "production"
+
+
+settings = Settings()
