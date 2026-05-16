@@ -6,6 +6,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from common.enums.enums_orden import TipoEstudio
 
 
 class Resultado(Base):
@@ -15,7 +16,7 @@ class Resultado(Base):
     id_orden: Mapped[int | None] = mapped_column(Integer, nullable=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
     tipo_estudio: Mapped[str] = mapped_column(
-        Enum("Laboratorio", "Imagen", "Anatomia_Patologica", name="tipo_estudio_resultado"),
+        Enum(TipoEstudio, name="tipo_estudio_resultado"),
     )
     id_profesional_firmante: Mapped[str] = mapped_column(String(200))
     fecha_resultado: Mapped[datetime] = mapped_column(

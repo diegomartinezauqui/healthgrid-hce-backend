@@ -1,32 +1,11 @@
 """Schemas de episodios y actos médicos (Integración M7 Facturación)."""
 
 from datetime import datetime
-from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-
-class TipoEpisodio(str, Enum):
-    CONSULTA_EXTERNA = "consulta-externa"
-    INTERNACION = "internacion"
-    GUARDIA = "guardia"
-    CIRUGIA = "cirugia"
-
-
-class EstadoEpisodio(str, Enum):
-    OPEN = "open"
-    CLOSED = "closed"
-
-
-class TipoActoMedico(str, Enum):
-    CONSULTA = "consulta"
-    ESTUDIO_LABORATORIO = "estudio-laboratorio"
-    ESTUDIO_IMAGEN = "estudio-imagen"
-    PROCEDIMIENTO = "procedimiento"
-    CIRUGIA = "cirugia"
-    MEDICACION = "medicacion"
-    DESCARTABLE = "descartable"
+from common.enums.enums_episodio import EstadoEpisodio, TipoActoMedico, TipoEpisodio
 
 
 class ActoMedicoSchema(BaseModel):
@@ -46,6 +25,20 @@ class ActoMedicoSchema(BaseModel):
 
     model_config = {"from_attributes": True}
 
+# Schema para crear un episodio médico
+class EpisodioCreate(BaseModel):
+    """Creación de episodio médico."""
+
+    id_paciente: int = Field(..., examples=[10500])
+    tipo: TipoEpisodio = Field(..., examples=["internacion"])
+    estado: EstadoEpisodio = Field(..., examples=["closed"])
+    id_sede: int = Field(..., examples=[3])
+    id_medico_responsable: int = Field(..., examples=[42])
+    diagnostico_principal: Optional[str] = Field(
+        None, examples=["J18.9 - Neumonía no especificada"]
+    )
+
+    model_config = {"from_attributes": True}
 
 class EpisodioResumen(BaseModel):
     """Resumen de un episodio para listados."""

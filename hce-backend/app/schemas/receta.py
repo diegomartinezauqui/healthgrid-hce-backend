@@ -1,22 +1,11 @@
 """Schemas de recetas y alertas farmacológicas (Integración M3 Farmacia)."""
 
-from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-
-class TipoAlertaFarmacologica(str, Enum):
-    ALERGIA_MEDICAMENTOSA = "ALERGIA_MEDICAMENTOSA"
-    INSUFICIENCIA_RENAL = "INSUFICIENCIA_RENAL"
-    INSUFICIENCIA_HEPATICA = "INSUFICIENCIA_HEPATICA"
-    EMBARAZO = "EMBARAZO"
-
-
-class EstadoReceta(str, Enum):
-    ACTIVA = "Activa"
-    SUSPENDIDA = "Suspendida"
-    DISPENSADA = "Dispensada"
+from common.enums.enums_alertas import TipoAlertaFarmacologica
+from common.enums.enums_receta import EstadoReceta
 
 
 class AlertaFarmacologicaSchema(BaseModel):

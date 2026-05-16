@@ -7,18 +7,20 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+from common.enums.enums_episodio import EstadoEpisodio, TipoEpisodio
+
 
 class Episodio(Base):
     __tablename__ = "episodios"
 
     id_episodio: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
-    tipo: Mapped[str] = mapped_column(
-        Enum("consulta-externa", "internacion", "guardia", "cirugia", name="tipo_episodio"),
+    tipo: Mapped[TipoEpisodio] = mapped_column(
+        Enum(TipoEpisodio, name="tipo_episodio"),
     )
-    estado: Mapped[str] = mapped_column(
-        Enum("open", "closed", name="estado_episodio"),
-        default="open",
+    estado: Mapped[EstadoEpisodio] = mapped_column(
+        Enum(EstadoEpisodio, name="estado_episodio"),
+        default=EstadoEpisodio.OPEN,
     )
     id_sede: Mapped[int] = mapped_column(Integer)
     id_medico_responsable: Mapped[int] = mapped_column(Integer)

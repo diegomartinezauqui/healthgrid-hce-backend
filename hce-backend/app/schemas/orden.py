@@ -1,29 +1,10 @@
 """Schemas de órdenes médicas y alertas clínicas (Integración M4/M5 Estudios)."""
 
-from enum import Enum
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-
-class TipoEstudio(str, Enum):
-    LABORATORIO = "Laboratorio"
-    IMAGEN = "Imagen"
-    ANATOMIA_PATOLOGICA = "Anatomia_Patologica"
-
-
-class PrioridadOrden(str, Enum):
-    NORMAL = "Normal"
-    URGENTE = "Urgente"
-    EMERGENCIA = "Emergencia"
-
-
-class TipoAlertaClinica(str, Enum):
-    CONTRAINDICACION_ABSOLUTA = "CONTRAINDICACION_ABSOLUTA"
-    ALERGIA = "ALERGIA"
-    RIESGO_SANGRADO = "RIESGO_SANGRADO"
-    EMBARAZO = "EMBARAZO"
-
+from common.enums.enums_orden import TipoAlertaClinica, TipoEstudio, PrioridadOrden
 
 class AlertaClinicaSchema(BaseModel):
     """Alerta de seguridad clínica (Smart Payload para M4/M5)."""
