@@ -29,3 +29,4 @@ class Paciente(Base):
     alertas_clinicas = relationship("AlertaClinica", back_populates="paciente", lazy="selectin")
     alertas_farmacologicas = relationship("AlertaFarmacologica", back_populates="paciente", lazy="selectin")
     coberturas = relationship("CoberturaMedica", back_populates="paciente", lazy="selectin")
+    ficha_medica = relationship("FichaMedica", back_populates="paciente", uselist=False, lazy="selectin")

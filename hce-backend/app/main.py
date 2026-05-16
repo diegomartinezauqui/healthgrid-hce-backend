@@ -11,6 +11,7 @@ from app.routers import (
     alertas,
     core_integration,
     episodes,
+    ficha_medica,
     health,
     historial,
     insurance,
@@ -58,3 +59,4 @@ app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
 app.include_router(alertas.router, prefix=API_PREFIX, tags=["Integración M9 (Monitoreo)"])
 app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
+app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica (HCE)"])

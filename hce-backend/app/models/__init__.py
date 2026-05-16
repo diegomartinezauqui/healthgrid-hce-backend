@@ -14,6 +14,7 @@ from app.models.orden import Orden
 from app.models.paciente import Paciente
 from app.models.receta import Receta
 from app.models.resultado import Resultado
+from app.models.ficha_medica import FichaMedica
 
 __all__ = [
     "Paciente",
@@ -27,4 +28,5 @@ __all__ = [
     "AlertaFarmacologica",
     "CoberturaMedica",
     "MovimientoInternacion",
+    "FichaMedica",
 ]
