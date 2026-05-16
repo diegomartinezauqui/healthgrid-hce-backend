@@ -7,6 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+from common.enums.enums_episodio import TipoActoMedico
+
 
 class ActoMedico(Base):
     __tablename__ = "actos_medicos"
@@ -16,16 +18,7 @@ class ActoMedico(Base):
     codigo_nomenclador: Mapped[str | None] = mapped_column(String(20), nullable=True)
     descripcion: Mapped[str | None] = mapped_column(String(500), nullable=True)
     tipo: Mapped[str] = mapped_column(
-        Enum(
-            "consulta",
-            "estudio-laboratorio",
-            "estudio-imagen",
-            "procedimiento",
-            "cirugia",
-            "medicacion",
-            "descartable",
-            name="tipo_acto_medico",
-        ),
+        Enum(TipoActoMedico, name="tipo_acto_medico"),
     )
     id_profesional: Mapped[int | None] = mapped_column(Integer, nullable=True)
     fecha_realizacion: Mapped[datetime] = mapped_column(

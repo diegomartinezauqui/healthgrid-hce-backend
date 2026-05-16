@@ -1,11 +1,14 @@
 """Schemas de eventos Kafka publicados y consumidos por HCE."""
 
 from datetime import datetime
-from enum import Enum
 from typing import Optional
 from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+from common.enums.enums_episodio import TipoEpisodio
+from common.enums.enums_kafka import SeveridadPatologia, TipoCambioPermiso
+from common.enums.enums_orden import TipoEstudio
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -23,12 +26,6 @@ class EventoKafkaNuevaReceta(BaseModel):
     tipo_paciente: str = Field(..., examples=["Internado"])  # Internado | Ambulatorio
 
 
-class TipoEstudioKafka(str, Enum):
-    LABORATORIO = "Laboratorio"
-    IMAGEN = "Imagen"
-    ANATOMIA_PATOLOGICA = "Anatomia_Patologica"
-
-
 class EventoKafkaNuevaOrden(BaseModel):
     """
     Tópico: clinica.estudios.orden_creada
@@ -36,14 +33,7 @@ class EventoKafkaNuevaOrden(BaseModel):
     """
 
     id_orden: int = Field(..., examples=[4050])
-    tipo_estudio: TipoEstudioKafka = Field(..., examples=["Imagen"])
-
-
-class TipoEpisodioKafka(str, Enum):
-    CONSULTA_EXTERNA = "consulta-externa"
-    INTERNACION = "internacion"
-    GUARDIA = "guardia"
-    CIRUGIA = "cirugia"
+    tipo_estudio: TipoEstudio = Field(..., examples=["Imagen"])
 
 
 class EventoKafkaEpisodioCerrado(BaseModel):
@@ -58,16 +48,10 @@ class EventoKafkaEpisodioCerrado(BaseModel):
     id_episodio: int = Field(..., examples=[700])
     id_paciente: int = Field(..., examples=[10500])
     id_sede: int = Field(..., examples=[3])
-    tipo_episodio: TipoEpisodioKafka = Field(..., examples=["internacion"])
+    tipo_episodio: TipoEpisodio = Field(..., examples=["internacion"])
     id_medico_cierre: int = Field(..., examples=[42])
     total_actos_medicos: int = Field(..., examples=[4])
     id_obra_social: Optional[int] = Field(None, examples=[15])
-
-
-class SeveridadPatologia(str, Enum):
-    MODERATE = "moderate"
-    HIGH = "high"
-    CRITICAL = "critical"
 
 
 class EventoKafkaPatologiaCritica(BaseModel):
@@ -114,12 +98,6 @@ class EventoKafkaPresentismo(BaseModel):
 # ═══════════════════════════════════════════════════════════════════
 
 
-class TipoCambioPermiso(str, Enum):
-    REVOKE_ACCESS = "revoke-access"
-    ROLE_CHANGE = "role-change"
-    DEACTIVATE_USER = "deactivate-user"
-
-
 class PermissionChangeNotification(BaseModel):
     """Payload que HCE envía a Core para notificar cambio de permisos."""
 
@@ -137,3 +115,4 @@ class PermissionChangeResponse(BaseModel):
     """Respuesta de Core tras recibir la notificación."""
 
     acknowledged: bool = Field(..., examples=[True])
+

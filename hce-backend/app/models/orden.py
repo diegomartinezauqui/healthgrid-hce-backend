@@ -12,7 +12,7 @@ class Orden(Base):
 
     id_orden: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
-    tipo_estudio: Mapped[str] = mapped_column(Enum(TipoEstudio))
+    tipo_estudio: Mapped[str] = mapped_column(Enum(TipoEstudio), name="tipo_estudio")
     descripcion_pedido: Mapped[str | None] = mapped_column(String(500), nullable=True)
     prioridad: Mapped[str] = mapped_column(Enum(PrioridadOrden), default="Normal")
     estado: Mapped[str] = mapped_column(String(50), default="Pendiente")

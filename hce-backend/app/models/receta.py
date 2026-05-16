@@ -4,6 +4,7 @@ from sqlalchemy import Enum, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from common.enums.enums_receta import EstadoReceta
 
 
 class Receta(Base):
@@ -17,8 +18,8 @@ class Receta(Base):
     medicamento: Mapped[str] = mapped_column(String(300))
     indicaciones: Mapped[str | None] = mapped_column(Text, nullable=True)
     estado: Mapped[str] = mapped_column(
-        Enum("Activa", "Suspendida", "Dispensada", name="estado_receta"),
-        default="Activa",
+        Enum(EstadoReceta, name="estado_receta"),
+        default=EstadoReceta.ACTIVA,
     )
 
     # ─── Relaciones ───────────────────────────────────────────────

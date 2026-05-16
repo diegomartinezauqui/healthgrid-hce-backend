@@ -7,6 +7,12 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
+'''
+to-do: consultar al módulo 7 como es su flujo para facturar
+Actualmente guardamos una tabla caché Paciente y obra social.
+Módulo 7 solamente nos consulta a nosotros los actos médicos y la obra social,
+luego ellos se encargan de facturar.
+'''
 
 class CoberturaMedica(Base):
     __tablename__ = "coberturas_medicas"

@@ -1,23 +1,11 @@
 """Schemas de internación (Integración M6 Camas)."""
 
 from datetime import datetime
-from enum import Enum
 from typing import Optional
 
 from pydantic import BaseModel, Field
 
-
-class PrioridadInternacion(str, Enum):
-    BAJA = "Baja"
-    MEDIA = "Media"
-    ALTA = "Alta"
-    EMERGENCIA = "Emergencia"
-
-
-class SectorSolicitado(str, Enum):
-    UTI = "UTI"
-    SALA_COMUN = "Sala_Comun"
-    GUARDIA_OBSERVACION = "Guardia_Observacion"
+from common.enums.enums_internacion import PrioridadInternacion, SectorSolicitado
 
 
 class IngresoInternacionRequest(BaseModel):

@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
-from common.enums.enums_episodio import EstadoEpisodio, TipoActoMedico, TipoEpisodio
+from common.enums.enums_episodio import EstadoEpisodio, TipoEpisodio
 
 
 class Episodio(Base):
