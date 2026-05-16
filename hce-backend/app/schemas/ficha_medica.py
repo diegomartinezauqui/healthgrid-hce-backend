@@ -1,0 +1,52 @@
+"""Schemas de ficha médica — datos clínicos permanentes del paciente."""
+
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+
+class FichaMedicaBase(BaseModel):
+    """Atributos compartidos entre Create y Update."""
+
+    grupo_sanguineo: Optional[str] = Field(
+        None,
+        max_length=10,
+        examples=["A+"],
+        description="Grupo sanguíneo y factor Rh del paciente.",
+    )
+    peso_kg: Optional[float] = Field(
+        None,
+        examples=[72.5],
+        description="Peso del paciente en kilogramos.",
+    )
+    altura_cm: Optional[float] = Field(
+        None,
+        examples=[175.0],
+        description="Altura del paciente en centímetros.",
+    )
+    observaciones_generales: Optional[str] = Field(
+        None,
+        examples=["Paciente con antecedentes de hipertensión arterial. Diabético tipo 2."],
+        description="Notas generales y antecedentes del paciente visibles en la cabecera de la ficha.",
+    )
+
+
+class FichaMedicaCreate(FichaMedicaBase):
+    """Payload para crear/registrar la ficha médica de un paciente."""
+
+    # El id_paciente viene de la URL del endpoint, no del body
+    pass
+
+
+class FichaMedicaUpdate(FichaMedicaBase):
+    """Payload para actualizar parcialmente la ficha médica. Todos los campos son opcionales."""
+
+    pass
+
+
+class FichaMedicaSchema(FichaMedicaBase):
+    """Schema de respuesta completo de la ficha médica."""
+
+    id_paciente: int = Field(..., examples=[10500])
+
+    model_config = {"from_attributes": True}
