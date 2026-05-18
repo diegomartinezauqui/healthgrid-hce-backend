@@ -1,9 +1,10 @@
 """Servicio de ficha médica — lógica de negocio para CRUD de FichaMedica."""
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.ficha_medica import FichaMedica
+from app.repositories.ficha_medica_repository import ficha_medica_repo
+from app.repositories.paciente_repository import paciente_repo
 from app.schemas.ficha_medica import FichaMedicaCreate, FichaMedicaUpdate
 
 
@@ -12,10 +13,7 @@ async def get_ficha_medica(
     id_paciente: int,
 ) -> FichaMedica | None:
     """Obtener la ficha médica de un paciente por su ID."""
-    result = await db.execute(
-        select(FichaMedica).where(FichaMedica.id_paciente == id_paciente)
-    )
-    return result.scalar_one_or_none()
+    return await ficha_medica_repo.get_by_paciente(db, id_paciente)
 
 
 async def crear_ficha_medica(
@@ -25,22 +23,17 @@ async def crear_ficha_medica(
 ) -> FichaMedica:
     """
     Crear la ficha médica de un paciente.
-    Lanza ValueError si ya existe una ficha para ese paciente.
+    Lanza LookupError si el paciente no existe (→ 404).
+    Lanza ValueError si ya existe una ficha para ese paciente (→ 409).
     """
-    existente = await get_ficha_medica(db, id_paciente)
+    if not await paciente_repo.exists(db, id_paciente):
+        raise LookupError(f"No existe el paciente con id {id_paciente}.")
+
+    existente = await ficha_medica_repo.get_by_paciente(db, id_paciente)
     if existente:
         raise ValueError(f"Ya existe una ficha médica para el paciente {id_paciente}.")
 
-    ficha = FichaMedica(
-        id_paciente=id_paciente,
-        grupo_sanguineo=data.grupo_sanguineo,
-        peso_kg=data.peso_kg,
-        altura_cm=data.altura_cm,
-        observaciones_generales=data.observaciones_generales,
-    )
-    db.add(ficha)
-    await db.flush()  # Persiste sin cerrar la transacción; el commit lo hace el dependency get_db
-    return ficha
+    return await ficha_medica_repo.create(db, id_paciente, data)
 
 
 async def actualizar_ficha_medica(
@@ -53,14 +46,8 @@ async def actualizar_ficha_medica(
     Solo modifica los campos que vengan con valor (no None).
     Retorna None si la ficha no existe.
     """
-    ficha = await get_ficha_medica(db, id_paciente)
+    ficha = await ficha_medica_repo.get_by_paciente(db, id_paciente)
     if not ficha:
         return None
 
-    # Actualización parcial: solo se pisan los campos que el cliente envió
-    campos = data.model_dump(exclude_unset=True)
-    for campo, valor in campos.items():
-        setattr(ficha, campo, valor)
-
-    await db.flush()
-    return ficha
+    return await ficha_medica_repo.update(db, ficha, data)
