@@ -1,26 +1,15 @@
-"""Schemas de recetas y alertas farmacológicas (Integración M3 Farmacia)."""
+"""Schemas de recetas médicas (Integración M3 Farmacia)."""
 
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from common.enums.enums_alertas import TipoAlertaFarmacologica
+from app.schemas.alerta import AlertaSmartPayload
 from common.enums.enums_receta import EstadoReceta
 
 
-class AlertaFarmacologicaSchema(BaseModel):
-    """Alerta de seguridad farmacológica (Smart Payload para M3)."""
-
-    tipo: TipoAlertaFarmacologica = Field(
-        ..., examples=["ALERGIA_MEDICAMENTOSA"]
-    )
-    descripcion: str = Field(
-        ..., examples=["Paciente reporta shock anafiláctico a la Penicilina en 2022."]
-    )
-
-
 class RecetaMedicaDetallada(BaseModel):
-    """Receta electrónica con Smart Payload de alertas farmacológicas."""
+    """Receta electrónica con Smart Payload de alertas clínicas activas del paciente."""
 
     id_receta: int = Field(..., examples=[8502])
     id_paciente: int = Field(..., examples=[10500])
@@ -30,7 +19,7 @@ class RecetaMedicaDetallada(BaseModel):
         None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
     )
     estado: EstadoReceta = Field(..., examples=["Activa"])
-    alertas_farmacologicas: List[AlertaFarmacologicaSchema] = Field(default_factory=list)
+    alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

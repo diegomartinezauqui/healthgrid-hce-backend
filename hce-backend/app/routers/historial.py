@@ -10,7 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
-from app.schemas.receta import AlertaFarmacologicaSchema, RecetaMedicaDetallada
+from app.schemas.alerta import AlertaSmartPayload
+from app.schemas.receta import RecetaMedicaDetallada
 from app.schemas.resultado import ResultadoEstudioResumen
 from app.services import receta_service, resultado_service
 
@@ -39,7 +40,7 @@ async def historial_recetas(
     recetas = await receta_service.get_recetas(db, id_paciente=id_paciente)
     alertas = await receta_service.get_alertas_farmacologicas_paciente(db, id_paciente)
     alertas_schema = [
-        AlertaFarmacologicaSchema(tipo=a.tipo, descripcion=a.descripcion)
+        AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
         for a in alertas
     ]
 
@@ -51,7 +52,7 @@ async def historial_recetas(
             medicamento=r.medicamento,
             indicaciones=r.indicaciones,
             estado=r.estado,
-            alertas_farmacologicas=alertas_schema,
+            alertas_clinicas=alertas_schema,
         )
         for r in recetas
     ]

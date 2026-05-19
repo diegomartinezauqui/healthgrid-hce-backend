@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from app.routers import (
     alertas,
+    antecedentes,
     core_integration,
     episodes,
     ficha_medica,
@@ -57,6 +58,7 @@ app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6
 app.include_router(episodes.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
-app.include_router(alertas.router, prefix=API_PREFIX, tags=["Integración M9 (Monitoreo)"])
-app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica (HCE)"])
+app.include_router(alertas.router, prefix=API_PREFIX, tags=["Ficha Médica — Alertas Clínicas"])
+app.include_router(antecedentes.router, prefix=API_PREFIX, tags=["Ficha Médica — Antecedentes"])
+app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])

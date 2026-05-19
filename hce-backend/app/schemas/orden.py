@@ -1,24 +1,15 @@
-"""Schemas de órdenes médicas y alertas clínicas (Integración M4/M5 Estudios)."""
+"""Schemas de órdenes médicas (Integración M4/M5 Estudios)."""
 
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
 
-from common.enums.enums_orden import TipoAlertaClinica, TipoEstudio, PrioridadOrden
-
-class AlertaClinicaSchema(BaseModel):
-    """Alerta de seguridad clínica (Smart Payload para M4/M5)."""
-
-    tipo: TipoAlertaClinica = Field(
-        ..., examples=["CONTRAINDICACION_ABSOLUTA"]
-    )
-    descripcion: str = Field(
-        ..., examples=["El paciente posee un marcapasos cardíaco."]
-    )
+from app.schemas.alerta import AlertaSmartPayload
+from common.enums.enums_orden import TipoEstudio, PrioridadOrden
 
 
 class OrdenMedicaCompleta(BaseModel):
-    """Orden médica con Smart Payload de alertas clínicas."""
+    """Orden médica con Smart Payload de alertas clínicas activas."""
 
     id_orden: int = Field(..., examples=[4050])
     id_paciente: int = Field(..., examples=[10500])
@@ -27,7 +18,7 @@ class OrdenMedicaCompleta(BaseModel):
         None, examples=["Resonancia Magnética de Cerebro"]
     )
     prioridad: PrioridadOrden = Field(..., examples=["Urgente"])
-    alertas_clinicas: List[AlertaClinicaSchema] = Field(default_factory=list)
+    alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
 

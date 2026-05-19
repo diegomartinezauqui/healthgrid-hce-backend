@@ -12,10 +12,10 @@ from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.receta import (
-    AlertaFarmacologicaSchema,
     RecetaListResponse,
     RecetaMedicaDetallada,
 )
+from app.schemas.alerta import AlertaSmartPayload
 from app.services import receta_service
 
 router = APIRouter()
@@ -45,7 +45,6 @@ async def listar_recetas(
         db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha
     )
 
-    # Enriquecer cada receta con alertas farmacológicas del paciente
     data = []
     for receta in recetas:
         alertas = await receta_service.get_alertas_farmacologicas_paciente(
@@ -59,8 +58,8 @@ async def listar_recetas(
                 medicamento=receta.medicamento,
                 indicaciones=receta.indicaciones,
                 estado=receta.estado,
-                alertas_farmacologicas=[
-                    AlertaFarmacologicaSchema(tipo=a.tipo, descripcion=a.descripcion)
+                alertas_clinicas=[
+                    AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
                 ],
             )
@@ -107,8 +106,8 @@ async def obtener_receta(
         medicamento=receta.medicamento,
         indicaciones=receta.indicaciones,
         estado=receta.estado,
-        alertas_farmacologicas=[
-            AlertaFarmacologicaSchema(tipo=a.tipo, descripcion=a.descripcion)
+        alertas_clinicas=[
+            AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
     )

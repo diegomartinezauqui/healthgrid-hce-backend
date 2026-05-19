@@ -10,8 +10,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
+from app.schemas.alerta import AlertaSmartPayload
 from app.schemas.orden import (
-    AlertaClinicaSchema,
     OrdenListResponse,
     OrdenMedicaCompleta,
 )
@@ -52,7 +52,7 @@ async def listar_ordenes(
                 descripcion_pedido=orden.descripcion_pedido,
                 prioridad=orden.prioridad,
                 alertas_clinicas=[
-                    AlertaClinicaSchema(tipo=a.tipo, descripcion=a.descripcion)
+                    AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
                 ],
             )
@@ -96,7 +96,7 @@ async def obtener_orden(
         descripcion_pedido=orden.descripcion_pedido,
         prioridad=orden.prioridad,
         alertas_clinicas=[
-            AlertaClinicaSchema(tipo=a.tipo, descripcion=a.descripcion)
+            AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
     )

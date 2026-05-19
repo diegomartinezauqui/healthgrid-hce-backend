@@ -6,8 +6,9 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.alerta_farmacologica import AlertaFarmacologica
+from app.models.alerta_clinica import AlertaClinicaPaciente
 from app.models.receta import Receta
+from app.repositories.alerta_repository import alerta_repo
 
 
 async def get_recetas(
@@ -36,11 +37,6 @@ async def get_receta_by_id(db: AsyncSession, id_receta: int) -> Optional[Receta]
 
 async def get_alertas_farmacologicas_paciente(
     db: AsyncSession, id_paciente: int
-) -> list[AlertaFarmacologica]:
-    """Obtener alertas farmacológicas de un paciente (Smart Payload)."""
-    result = await db.execute(
-        select(AlertaFarmacologica).where(
-            AlertaFarmacologica.id_paciente == id_paciente
-        )
-    )
-    return list(result.scalars().all())
+) -> list[AlertaClinicaPaciente]:
+    """Obtener alertas activas del paciente para Smart Payload en recetas."""
+    return await alerta_repo.get_activas_by_paciente(db, id_paciente)
