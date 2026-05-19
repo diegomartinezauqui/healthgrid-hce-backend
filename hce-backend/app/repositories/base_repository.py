@@ -10,7 +10,7 @@ Uso:
 from typing import Any, Generic, Sequence, Type, TypeVar
 
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import exists as sa_exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # ─── Type variables ──────────────────────────────────────────────────────────
@@ -60,8 +60,15 @@ class BaseRepository(Generic[ModelT, UpdateT]):
         return result.scalars().all()
 
     async def exists(self, db: AsyncSession, pk: Any) -> bool:
-        """Verificar si existe un registro con esa clave primaria."""
-        return await self.get(db, pk) is not None
+        """Verificar si existe un registro con esa clave primaria.
+
+        Usa SELECT 1 en lugar de cargar el objeto completo para evitar
+        el cascade de relaciones lazy='selectin'.
+        """
+        result = await db.execute(
+            select(sa_exists().where(self._pk == pk))
+        )
+        return result.scalar()
 
     # ── Write ─────────────────────────────────────────────────────────────────
 
