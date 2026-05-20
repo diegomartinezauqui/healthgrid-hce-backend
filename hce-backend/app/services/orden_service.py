@@ -5,8 +5,9 @@ from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.alerta_clinica import AlertaClinica
+from app.models.alerta_clinica import AlertaClinicaPaciente
 from app.models.orden import Orden
+from app.repositories.alerta_repository import alerta_repo
 
 
 async def get_ordenes(
@@ -32,9 +33,6 @@ async def get_orden_by_id(db: AsyncSession, id_orden: int) -> Optional[Orden]:
 
 async def get_alertas_clinicas_paciente(
     db: AsyncSession, id_paciente: int
-) -> list[AlertaClinica]:
-    """Obtener alertas clínicas de un paciente (Smart Payload)."""
-    result = await db.execute(
-        select(AlertaClinica).where(AlertaClinica.id_paciente == id_paciente)
-    )
-    return list(result.scalars().all())
+) -> list[AlertaClinicaPaciente]:
+    """Obtener alertas activas del paciente para Smart Payload en órdenes."""
+    return await alerta_repo.get_activas_by_paciente(db, id_paciente)
