@@ -39,7 +39,7 @@ class AntecedenteRepository(BaseRepository[AntecedentePaciente, AntecedenteUpdat
         return list(result.scalars().all())
 
     async def create(
-        self, db: AsyncSession, id_paciente: int, data: AntecedenteCreate
+        self, db: AsyncSession, id_paciente: int, data: AntecedenteCreate, id_medico: int
     ) -> AntecedentePaciente:
         """Construye la entidad con los datos del schema y la persiste."""
         antecedente = AntecedentePaciente(
@@ -48,7 +48,7 @@ class AntecedenteRepository(BaseRepository[AntecedentePaciente, AntecedenteUpdat
             descripcion=data.descripcion,
             fecha_suceso=data.fecha_suceso,
             observaciones=data.observaciones,
-            id_medico_registro=data.id_medico_registro,
+            id_medico_registro=id_medico,
         )
         return await self.save(db, antecedente)
 

@@ -15,7 +15,6 @@ class AntecedenteCreate(BaseModel):
     descripcion: str = Field(..., examples=["Colecistectomía laparoscópica"])
     fecha_suceso: Optional[date] = Field(None, examples=["2018-04-15"])
     observaciones: Optional[str] = Field(None, examples=["Sin complicaciones postoperatorias."])
-    id_medico_registro: int = Field(..., examples=[42])
 
 
 class AntecedenteUpdate(BaseModel):

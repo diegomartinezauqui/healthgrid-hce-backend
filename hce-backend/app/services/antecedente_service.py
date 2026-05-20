@@ -24,6 +24,7 @@ async def crear_antecedente(
     db: AsyncSession,
     id_paciente: int,
     data: AntecedenteCreate,
+    id_medico: int,
 ) -> AntecedentePaciente:
     """
     Registrar un nuevo antecedente para un paciente.
@@ -31,7 +32,7 @@ async def crear_antecedente(
     """
     if not await paciente_repo.exists(db, id_paciente):
         raise LookupError(f"No existe el paciente con id {id_paciente}.")
-    return await antecedente_repo.create(db, id_paciente, data)
+    return await antecedente_repo.create(db, id_paciente, data, id_medico)
 
 
 async def actualizar_antecedente(

@@ -23,7 +23,7 @@ security = HTTPBearer(
 class CurrentUser:
     """Datos del usuario extraídos del JWT payload."""
 
-    sub: int                    # ID del usuario
+    sub: int                    # ID del usuario (médico)
     username: str
     role: str                   # medico, enfermero, administrativo, etc.
     permissions: List[str]      # ["hce:read", "hce:write", ...]
@@ -58,12 +58,14 @@ async def get_current_user_from_token(
     """
     Dependency de FastAPI que extrae y valida el JWT del header Authorization.
     Retorna un CurrentUser con los datos del payload.
+
+    En desarrollo, usar el endpoint POST /api/v1/dev/login para obtener un token.
     """
     payload = decode_jwt(credentials.credentials)
 
     try:
         return CurrentUser(
-            sub=payload["sub"],
+            sub=int(payload["sub"]),
             username=payload.get("username", ""),
             role=payload.get("role", ""),
             permissions=payload.get("permissions", []),

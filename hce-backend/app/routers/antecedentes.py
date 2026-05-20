@@ -28,7 +28,7 @@ router = APIRouter()
 async def listar_antecedentes(
     id_paciente: int,
     db: DbSession,
-    #_user=Depends(require_permission("hce:antecedentes:read")),
+    _user=Depends(require_permission("hce:antecedentes:read")),
 ):
     try:
         return await antecedente_service.get_antecedentes_paciente(db, id_paciente)
@@ -55,10 +55,12 @@ async def crear_antecedente(
     id_paciente: int,
     body: AntecedenteCreate,
     db: DbSession,
-    #_user=Depends(require_permission("hce:antecedentes:write")),
+    user=Depends(require_permission("hce:antecedentes:write")),
 ):
     try:
-        antecedente = await antecedente_service.crear_antecedente(db, id_paciente, body)
+        antecedente = await antecedente_service.crear_antecedente(
+            db, id_paciente, body, user.sub
+        )
     except LookupError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,7 +85,7 @@ async def actualizar_antecedente(
     id_antecedente: int,
     body: AntecedenteUpdate,
     db: DbSession,
-    #_user=Depends(require_permission("hce:antecedentes:write")),
+    _user=Depends(require_permission("hce:antecedentes:write")),
 ):
     antecedente = await antecedente_service.actualizar_antecedente(
         db, id_paciente, id_antecedente, body

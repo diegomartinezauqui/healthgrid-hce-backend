@@ -32,6 +32,7 @@ async def crear_alerta(
     db: AsyncSession,
     id_paciente: int,
     data: AlertaCreate,
+    id_medico: int,
 ) -> AlertaClinicaPaciente:
     """
     Registrar una nueva alerta clínica para un paciente.
@@ -39,7 +40,7 @@ async def crear_alerta(
     """
     if not await paciente_repo.exists(db, id_paciente):
         raise LookupError(f"No existe el paciente con id {id_paciente}.")
-    return await alerta_repo.create(db, id_paciente, data)
+    return await alerta_repo.create(db, id_paciente, data, id_medico)
 
 
 async def resolver_alerta(
@@ -47,6 +48,7 @@ async def resolver_alerta(
     id_paciente: int,
     id_alerta: int,
     data: AlertaUpdate,
+    id_medico: int,
 ) -> AlertaClinicaPaciente | None:
     """
     Resolver (cerrar) una alerta clínica existente.
@@ -56,6 +58,7 @@ async def resolver_alerta(
     if not alerta or alerta.id_paciente != id_paciente:
         return None
     alerta.fecha_resolucion = datetime.now(timezone.utc)
+    alerta.id_medico_resolucion = id_medico
     return await alerta_repo.update(db, alerta, data)
 
 

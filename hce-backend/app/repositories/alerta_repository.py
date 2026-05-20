@@ -53,7 +53,7 @@ class AlertaRepository(BaseRepository[AlertaClinicaPaciente, AlertaUpdate]):
         return list(result.scalars().all())
 
     async def create(
-        self, db: AsyncSession, id_paciente: int, data: AlertaCreate
+        self, db: AsyncSession, id_paciente: int, data: AlertaCreate, id_medico: int
     ) -> AlertaClinicaPaciente:
         """Construye la entidad con los datos del schema y la persiste."""
         alerta = AlertaClinicaPaciente(
@@ -61,7 +61,7 @@ class AlertaRepository(BaseRepository[AlertaClinicaPaciente, AlertaUpdate]):
             tipo=data.tipo,
             severidad=data.severidad,
             descripcion=data.descripcion,
-            id_medico_registro=data.id_medico_registro,
+            id_medico_registro=id_medico,
         )
         return await self.save(db, alerta)
 

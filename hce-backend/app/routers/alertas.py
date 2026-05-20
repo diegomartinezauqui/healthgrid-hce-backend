@@ -28,7 +28,7 @@ router = APIRouter()
 async def listar_alertas(
     id_paciente: int,
     db: DbSession,
-    #_user=Depends(require_permission("hce:alertas:read")),
+    _user=Depends(require_permission("hce:alertas:read")),
 ):
     try:
         return await alerta_service.get_alertas_paciente(db, id_paciente)
@@ -55,10 +55,10 @@ async def crear_alerta(
     id_paciente: int,
     body: AlertaCreate,
     db: DbSession,
-    #_user=Depends(require_permission("hce:alertas:write")),
+    user=Depends(require_permission("hce:alertas:write")),
 ):
     try:
-        alerta = await alerta_service.crear_alerta(db, id_paciente, body)
+        alerta = await alerta_service.crear_alerta(db, id_paciente, body, user.sub)
     except LookupError as e:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -83,9 +83,11 @@ async def resolver_alerta(
     id_alerta: int,
     body: AlertaUpdate,
     db: DbSession,
-    #_user=Depends(require_permission("hce:alertas:write")),
+    user=Depends(require_permission("hce:alertas:write")),
 ):
-    alerta = await alerta_service.resolver_alerta(db, id_paciente, id_alerta, body)
+    alerta = await alerta_service.resolver_alerta(
+        db, id_paciente, id_alerta, body, user.sub
+    )
     if not alerta:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

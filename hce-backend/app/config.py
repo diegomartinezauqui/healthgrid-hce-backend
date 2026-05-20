@@ -33,6 +33,21 @@ class Settings(BaseSettings):
     APP_ENV: str = "development"
     APP_DEBUG: bool = True
 
+    # ─── Dev Auth (solo APP_ENV != production) ────────────────────
+    DEV_AUTH_USER_ID: int = 1
+    DEV_AUTH_USERNAME: str = "dr.dev"
+    DEV_AUTH_ROLE: str = "medico"
+    DEV_AUTH_SEDE_ID: int = 1
+    DEV_AUTH_PERMISSIONS: str = (
+        "hce:read,hce:write,"
+        "hce:alertas:read,hce:alertas:write,"
+        "hce:antecedentes:read,hce:antecedentes:write,"
+        "hce:ficha-medica:read,hce:ficha-medica:write,"
+        "hce:recetas:read,hce:ordenes:read,"
+        "hce:resultados:write,hce:internacion:write,"
+        "hce:episodes:read,hce:medical-acts:read,hce:insurance:read"
+    )
+
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"

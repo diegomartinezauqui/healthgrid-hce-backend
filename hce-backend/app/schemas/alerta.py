@@ -14,14 +14,12 @@ class AlertaCreate(BaseModel):
     tipo: TipoConsideracion = Field(..., examples=["Alergia"])
     severidad: SeveridadAlerta = Field(..., examples=["Severa"])
     descripcion: str = Field(..., examples=["Alergia severa a penicilina y derivados."])
-    id_medico_registro: int = Field(..., examples=[42])
 
 
 class AlertaUpdate(BaseModel):
     """Body para resolver una alerta clínica (PATCH)."""
 
     estado: EstadoAlerta = Field(..., examples=["Resuelta"])
-    id_medico_resolucion: int = Field(..., examples=[42])
     motivo_resolucion: str = Field(..., examples=["Alergia superada, confirmado por alergista."])
 
 

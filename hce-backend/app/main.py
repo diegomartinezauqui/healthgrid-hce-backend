@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.config import settings
 from app.routers import (
     alertas,
     antecedentes,
@@ -62,3 +63,8 @@ app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica 
 app.include_router(alertas.router, prefix=API_PREFIX, tags=["Ficha Médica — Alertas Clínicas"])
 app.include_router(antecedentes.router, prefix=API_PREFIX, tags=["Ficha Médica — Antecedentes"])
 app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
+
+# ─── Router de desarrollo (solo en APP_ENV != production) ─────
+if not settings.is_production:
+    from app.routers import dev
+    app.include_router(dev.router, prefix=API_PREFIX, tags=["🔧 Desarrollo"])
