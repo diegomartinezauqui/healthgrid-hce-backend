@@ -16,7 +16,7 @@ class Resultado(Base):
     id_orden: Mapped[int | None] = mapped_column(Integer, nullable=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
     tipo_estudio: Mapped[str] = mapped_column(
-        Enum(TipoEstudio, name="tipo_estudio_resultado"),
+        Enum(TipoEstudio, name="tipo_estudio_resultado", values_callable=lambda x: [e.value for e in x]),
     )
     id_profesional_firmante: Mapped[str] = mapped_column(String(200))
     fecha_resultado: Mapped[datetime] = mapped_column(

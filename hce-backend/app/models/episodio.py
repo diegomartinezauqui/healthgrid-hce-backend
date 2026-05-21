@@ -16,10 +16,10 @@ class Episodio(Base):
     id_episodio: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
     tipo: Mapped[TipoEpisodio] = mapped_column(
-        Enum(TipoEpisodio, name="tipo_episodio"),
+        Enum(TipoEpisodio, name="tipo_episodio", values_callable=lambda x: [e.value for e in x]),
     )
     estado: Mapped[EstadoEpisodio] = mapped_column(
-        Enum(EstadoEpisodio, name="estado_episodio"),
+        Enum(EstadoEpisodio, name="estado_episodio", values_callable=lambda x: [e.value for e in x]),
         default=EstadoEpisodio.OPEN,
     )
     id_sede: Mapped[int] = mapped_column(Integer)
