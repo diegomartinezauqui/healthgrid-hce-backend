@@ -42,11 +42,23 @@ async def setup_db():
 
 async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
     async with test_session() as session:
-        yield session
+        try:
+            yield session
+            await session.commit()
+        except Exception:
+            await session.rollback()
+            raise
 
 
 # Sobrescribir la dependency de BD
 app.dependency_overrides[get_db] = override_get_db
+
+
+@pytest_asyncio.fixture
+async def db() -> AsyncGenerator[AsyncSession, None]:
+    """Fixture para obtener una sesión de base de datos en los tests."""
+    async with test_session() as session:
+        yield session
 
 
 @pytest_asyncio.fixture

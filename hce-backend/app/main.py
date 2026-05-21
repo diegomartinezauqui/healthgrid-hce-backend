@@ -51,18 +51,18 @@ app = FastAPI(
 # ─── Registrar routers con prefijo base /api/v1 ──────────────────
 API_PREFIX = "/api/v1"
 
+app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 app.include_router(health.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
+app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica (HCE)"])
+app.include_router(antecedentes.router, prefix=API_PREFIX, tags=["Ficha Médica — Antecedentes"])
+app.include_router(alertas.router, prefix=API_PREFIX, tags=["Ficha Médica — Alertas Clínicas"])
+app.include_router(episodes.router, prefix=API_PREFIX)
 app.include_router(recetas.router, prefix=API_PREFIX, tags=["Integración M3 (Farmacia)"])
 app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
 app.include_router(resultados.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
 app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6 (Camas)"])
-app.include_router(episodes.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
-app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica (HCE)"])
-app.include_router(alertas.router, prefix=API_PREFIX, tags=["Ficha Médica — Alertas Clínicas"])
-app.include_router(antecedentes.router, prefix=API_PREFIX, tags=["Ficha Médica — Antecedentes"])
-app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 
 # ─── Router de desarrollo (solo en APP_ENV != production) ─────
 if not settings.is_production:
