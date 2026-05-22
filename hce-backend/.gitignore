@@ -1,0 +1,10 @@
+__pycache__
+venv/
+skills-lock.json
+.agents/
+.context/
+.sixth/
+.env
+.env.example
+*.db
+.pytest_cache/

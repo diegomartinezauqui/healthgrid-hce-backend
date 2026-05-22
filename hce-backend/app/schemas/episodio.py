@@ -29,16 +29,54 @@ class ActoMedicoSchema(BaseModel):
 class EpisodioCreate(BaseModel):
     """Creación de episodio médico."""
 
-    id_paciente: int = Field(..., examples=[10500])
     tipo: TipoEpisodio = Field(..., examples=["internacion"])
-    estado: EstadoEpisodio = Field(..., examples=["closed"])
-    id_sede: int = Field(..., examples=[3])
-    id_medico_responsable: int = Field(..., examples=[42])
+    estado: EstadoEpisodio = Field(default=EstadoEpisodio.OPEN, examples=["open"])
+    id_sede: Optional[int] = Field(None, examples=[3])
     diagnostico_principal: Optional[str] = Field(
         None, examples=["J18.9 - Neumonía no especificada"]
     )
 
     model_config = {"from_attributes": True}
+
+
+class EpisodioUpdate(BaseModel):
+    """Payload para actualizar un episodio médico (ej. cerrar o cambiar médico)."""
+
+    tipo: Optional[TipoEpisodio] = None
+    estado: Optional[EstadoEpisodio] = None
+    id_sede: Optional[int] = None
+    id_medico_responsable: Optional[int] = None
+    diagnostico_principal: Optional[str] = Field(None, max_length=500)
+    fecha_cierre: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
+
+
+class ActoMedicoCreate(BaseModel):
+    """Payload para registrar un nuevo acto médico en un episodio."""
+
+    codigo_nomenclador: Optional[str] = Field(None, max_length=20, examples=["01.01.01"])
+    descripcion: Optional[str] = Field(None, max_length=500, examples=["Consulta médica ambulatoria"])
+    tipo: TipoActoMedico = Field(..., examples=["consulta"])
+    id_profesional: Optional[int] = Field(None, examples=[42])
+    fecha_realizacion: Optional[datetime] = Field(None, description="Fecha de realización. Si no se envía, se usa la fecha/hora actual.")
+    cantidad: int = Field(default=1, gt=0, examples=[1])
+    observaciones: Optional[str] = None
+
+
+class ActoMedicoUpdate(BaseModel):
+    """Payload para actualizar parcialmente un acto médico."""
+
+    codigo_nomenclador: Optional[str] = Field(None, max_length=20)
+    descripcion: Optional[str] = Field(None, max_length=500)
+    tipo: Optional[TipoActoMedico] = None
+    id_profesional: Optional[int] = None
+    fecha_realizacion: Optional[datetime] = None
+    cantidad: Optional[int] = Field(None, gt=0)
+    observaciones: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
 
 class EpisodioResumen(BaseModel):
     """Resumen de un episodio para listados."""

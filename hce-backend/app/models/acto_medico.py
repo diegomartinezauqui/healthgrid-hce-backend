@@ -18,7 +18,7 @@ class ActoMedico(Base):
     codigo_nomenclador: Mapped[str | None] = mapped_column(String(20), nullable=True)
     descripcion: Mapped[str | None] = mapped_column(String(500), nullable=True)
     tipo: Mapped[str] = mapped_column(
-        Enum(TipoActoMedico, name="tipo_acto_medico"),
+        Enum(TipoActoMedico, name="tipo_acto_medico", values_callable=lambda x: [e.value for e in x]),
     )
     id_profesional: Mapped[int | None] = mapped_column(Integer, nullable=True)
     fecha_realizacion: Mapped[datetime] = mapped_column(
