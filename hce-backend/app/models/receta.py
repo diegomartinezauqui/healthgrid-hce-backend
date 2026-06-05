@@ -15,8 +15,6 @@ class Receta(Base):
     id_evolucion: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("evoluciones.id_evolucion"), nullable=True
     )
-    medicamento: Mapped[str] = mapped_column(String(300))
-    indicaciones: Mapped[str | None] = mapped_column(Text, nullable=True)
     estado: Mapped[str] = mapped_column(
         Enum(EstadoReceta, name="estado_receta", values_callable=lambda x: [e.value for e in x]),
         default=EstadoReceta.ACTIVA,
@@ -25,3 +23,9 @@ class Receta(Base):
     # ─── Relaciones ───────────────────────────────────────────────
     paciente = relationship("Paciente", back_populates="recetas")
     evolucion = relationship("Evolucion", back_populates="recetas")
+    items = relationship(
+        "ItemReceta",
+        back_populates="receta",
+        lazy="selectin",
+        cascade="all, delete-orphan",
+    )
