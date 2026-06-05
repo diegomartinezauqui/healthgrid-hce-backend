@@ -12,11 +12,12 @@ from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.receta import (
+    RecetaCreate,
     RecetaListResponse,
     RecetaMedicaDetallada,
 )
 from app.schemas.alerta import AlertaSmartPayload
-from app.services import receta_service
+from app.services import evolucion_service, receta_service
 
 router = APIRouter()
 
@@ -55,9 +56,8 @@ async def listar_recetas(
                 id_receta=receta.id_receta,
                 id_paciente=receta.id_paciente,
                 id_evolucion=receta.id_evolucion,
-                medicamento=receta.medicamento,
-                indicaciones=receta.indicaciones,
                 estado=receta.estado,
+                items=receta.items,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -103,11 +103,80 @@ async def obtener_receta(
         id_receta=receta.id_receta,
         id_paciente=receta.id_paciente,
         id_evolucion=receta.id_evolucion,
-        medicamento=receta.medicamento,
-        indicaciones=receta.indicaciones,
         estado=receta.estado,
+        items=receta.items,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
     )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# RECETAS DE LA EVOLUCIÓN (HCE)
+# ═══════════════════════════════════════════════════════════════════
+
+@router.post(
+    "/patients/{id_paciente}/episodes/{id_episodio}/evoluciones/{id_evolucion}/recetas",
+    response_model=RecetaMedicaDetallada,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar una receta médica",
+    description=(
+        "Permite al médico registrar una receta electrónica asociada a la nota de evolución. "
+        "Admite múltiples medicamentos. Al guardarse, se notifica automáticamente a Farmacia."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
+    },
+)
+async def crear_receta(
+    id_paciente: int,
+    id_episodio: int,
+    id_evolucion: int,
+    body: RecetaCreate,
+    db: DbSession,
+    user=Depends(require_permission("hce:recetas:write")),
+):
+    try:
+        # Validamos que la evolución exista y pertenezca al episodio/paciente
+        evolucion = await evolucion_service.get_evolucion_detalle(
+            db, id_paciente, id_episodio, id_evolucion
+        )
+        if not evolucion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "NOT_FOUND", "message": "La evolución solicitada no fue encontrada."},
+            )
+            
+        receta = await receta_service.registrar_receta(
+            db, id_paciente, id_episodio, id_evolucion, body
+        )
+        
+        alertas = await receta_service.get_alertas_farmacologicas_paciente(
+            db, id_paciente
+        )
+        
+        return RecetaMedicaDetallada(
+            id_receta=receta.id_receta,
+            id_paciente=receta.id_paciente,
+            id_evolucion=receta.id_evolucion,
+            estado=receta.estado,
+            items=receta.items,
+            alertas_clinicas=[
+                AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
+                for a in alertas
+            ],
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
+        )
