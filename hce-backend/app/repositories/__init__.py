@@ -7,6 +7,8 @@ from app.repositories.ficha_medica_repository import ficha_medica_repo
 from app.repositories.paciente_repository import paciente_repo
 from app.repositories.episodio_repository import episodio_repo
 from app.repositories.acto_medico_repository import acto_medico_repo
+from app.repositories.evolucion_repository import evolucion_repo
+from app.repositories.receta_repository import receta_repo
 
 __all__ = [
     "BaseRepository",
@@ -16,4 +18,6 @@ __all__ = [
     "paciente_repo",
     "episodio_repo",
     "acto_medico_repo",
+    "evolucion_repo",
+    "receta_repo",
 ]
