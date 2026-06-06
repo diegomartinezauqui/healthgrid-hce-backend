@@ -248,3 +248,4 @@ async def crear_acto_medico(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
         )
+

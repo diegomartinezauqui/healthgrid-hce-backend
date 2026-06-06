@@ -35,4 +35,6 @@ class Episodio(Base):
     # ─── Relaciones ───────────────────────────────────────────────
     paciente = relationship("Paciente", back_populates="episodios")
     actos_medicos = relationship("ActoMedico", back_populates="episodio", lazy="selectin")
+    evoluciones = relationship("Evolucion", back_populates="episodio", lazy="selectin")
     movimientos = relationship("MovimientoInternacion", back_populates="episodio", lazy="selectin")
+
