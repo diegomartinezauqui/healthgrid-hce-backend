@@ -8,6 +8,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.config import settings
+from app.kafka.consumer import start_kafka_consumer
+from app.services.kafka_producer import kafka_producer
+import asyncio
 from app.routers import (
     alertas,
     antecedentes,
@@ -32,9 +35,12 @@ async def lifespan(app: FastAPI):
     """
     # ── Startup ──
     print("🏥 HCE Module starting up...")
+    await kafka_producer.start()
+    asyncio.create_task(start_kafka_consumer())
     yield
     # ── Shutdown ──
-    print("🏥 HCE Module shutting down...")
+    print("🥞 HCE Module shutting down...")
+    await kafka_producer.stop()
 
 
 app = FastAPI(

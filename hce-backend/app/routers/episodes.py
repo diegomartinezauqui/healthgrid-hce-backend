@@ -6,11 +6,12 @@ Facturación consume para liquidación y HCE gestiona la atención médica.
 from datetime import date
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
+from app.schemas.internacion import SolicitudInternacionRequest
 from app.schemas.episodio import (
     ActoMedicoCreate,
     ActoMedicoListResponse,
@@ -248,3 +249,60 @@ async def crear_acto_medico(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
         )
+
+
+@router.post(
+    "/patients/{id_paciente}/episodes/{id_episodio}/solicitud-internacion",
+    status_code=status.HTTP_202_ACCEPTED,
+    tags=["Atención Clínica — Episodios"],
+    summary="Solicitar internación del paciente (HCE → M6)",
+    description=(
+        "El médico indica la necesidad de internar a un paciente desde una evolución activa. "
+        "HCE realiza una llamada REST sincrónica al Módulo 6 (Camas) para crear la solicitud "
+        "de asignación de cama. M6 procesará la solicitud y, una vez asignada la cama, "
+        "notificará a HCE mediante POST /internacion/ingreso. "
+        "Permission claim requerido: `hce:internacion:write`."
+    ),
+    responses={
+        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
+        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
+        404: {"model": ErrorResponse, "description": "Episodio no encontrado."},
+        422: {"model": ErrorResponse, "description": "Episodio cerrado o datos inválidos."},
+        503: {"model": ErrorResponse, "description": "M6 no disponible."},
+    },
+)
+async def solicitar_internacion(
+    id_paciente: int,
+    id_episodio: int,
+    body: SolicitudInternacionRequest,
+    request: Request,
+    db: DbSession,
+    user=Depends(require_permission("hce:internacion:write")),
+):
+    # Verificar que el episodio existe y pertenece al paciente
+    episodio = await episodio_service.get_episodio_detalle(db, id_paciente, id_episodio)
+    if not episodio:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "Episodio no encontrado."},
+        )
+
+    # Llamar a M6 para crear la solicitud de cama
+    from app.services import m6_client
+    # Extraer token del header Authorization para reenviar a M6
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.replace("Bearer ", "") if auth_header else None
+
+    try:
+        resultado = await m6_client.solicitar_internacion(body, token=token)
+    except RuntimeError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"error": "SERVICE_UNAVAILABLE", "message": str(exc)},
+        )
+
+    return {
+        "status": "accepted",
+        "message": "Solicitud de internación enviada a M6 correctamente.",
+        "m6_response": resultado,
+    }

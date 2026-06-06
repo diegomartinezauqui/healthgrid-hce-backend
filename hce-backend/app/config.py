@@ -43,7 +43,8 @@ class Settings(BaseSettings):
         "hce:alertas:read,hce:alertas:write,"
         "hce:antecedentes:read,hce:antecedentes:write,"
         "hce:ficha-medica:read,hce:ficha-medica:write,"
-        "hce:recetas:read,hce:ordenes:read,"
+        "hce:recetas:read,hce:recetas:write,"
+        "hce:ordenes:read,hce:ordenes:write,"
         "hce:resultados:write,hce:internacion:write,"
         "hce:episodes:read,hce:medical-acts:read,hce:insurance:read"
     )

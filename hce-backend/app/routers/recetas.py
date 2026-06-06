@@ -12,6 +12,8 @@ from app.auth.permissions import require_permission
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.receta import (
+    RecetaCreate,
+    RecetaCreatedResponse,
     RecetaListResponse,
     RecetaMedicaDetallada,
 )
@@ -110,4 +112,43 @@ async def obtener_receta(
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
+    )
+
+
+@router.post(
+    "/pacientes/{id_paciente}/recetas",
+    response_model=RecetaCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear receta electrónica (prescripción médica)",
+    description=(
+        "El médico prescribe una receta electrónica para un paciente dentro de una evolución médica. "
+        "Al crearse, HCE publica automáticamente el evento Kafka "
+        "`clinica.farmacia.receta_creada` para que M3 (Farmacia) lo procese "
+        "y disponga la medicación. "
+        "Permission claim requerido: `hce:recetas:write`."
+    ),
+    responses={
+        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
+        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
+        422: {"model": ErrorResponse, "description": "Datos inválidos."},
+    },
+)
+async def crear_receta(
+    id_paciente: int,
+    body: RecetaCreate,
+    db: DbSession,
+    _user=Depends(require_permission("hce:recetas:write")),
+):
+    receta = await receta_service.crear_receta(
+        db,
+        id_paciente=id_paciente,
+        medicamento=body.medicamento,
+        tipo_paciente=body.tipo_paciente,
+        id_evolucion=body.id_evolucion,
+        indicaciones=body.indicaciones,
+    )
+    return RecetaCreatedResponse(
+        status="success",
+        message="Receta creada y evento Kafka publicado.",
+        id_receta=receta.id_receta,
     )
