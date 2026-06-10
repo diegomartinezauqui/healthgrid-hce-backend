@@ -16,6 +16,7 @@ from app.routers import (
     antecedentes,
     core_integration,
     episodes,
+    evoluciones,
     ficha_medica,
     health,
     historial,
@@ -66,9 +67,10 @@ app.include_router(ficha_medica.router, prefix=API_PREFIX, tags=["Ficha Médica 
 app.include_router(antecedentes.router, prefix=API_PREFIX, tags=["Ficha Médica — Antecedentes"])
 app.include_router(alertas.router, prefix=API_PREFIX, tags=["Ficha Médica — Alertas Clínicas"])
 app.include_router(episodes.router, prefix=API_PREFIX)
+app.include_router(evoluciones.router, prefix=API_PREFIX)
+app.include_router(recetas.router, prefix=API_PREFIX, tags=["Atención Clínica — Recetas"])
 app.include_router(health.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
-app.include_router(recetas.router, prefix=API_PREFIX, tags=["Integración M3 (Farmacia)"])
 app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
 app.include_router(resultados.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
 app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6 (Camas)"])

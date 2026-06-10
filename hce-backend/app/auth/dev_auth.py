@@ -26,7 +26,16 @@ class DevLoginRequest(BaseModel):
     permissions: Optional[List[str]] = Field(
         None,
         description="Lista de permisos",
-        examples=[["hce:alertas:read", "hce:alertas:write"]],
+        examples=[[
+            "hce:read", "hce:write",
+            "hce:alertas:read", "hce:alertas:write",
+            "hce:antecedentes:read", "hce:antecedentes:write",
+            "hce:ficha-medica:read", "hce:ficha-medica:write",
+            "hce:recetas:read", "hce:recetas:write", "hce:ordenes:read",
+            "hce:resultados:write", "hce:internacion:write",
+            "hce:episodes:read", "hce:medical-acts:read", "hce:insurance:read",
+            "hce:evoluciones:read", "hce:evoluciones:write"
+        ]],
     )
     sede_id: Optional[int] = Field(None, description="ID de la sede", examples=[1])
     expire_hours: Optional[int] = Field(

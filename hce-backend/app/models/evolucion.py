@@ -20,4 +20,6 @@ class Evolucion(Base):
     )
 
     # ─── Relaciones ───────────────────────────────────────────────
+    episodio = relationship("Episodio", back_populates="evoluciones")
     recetas = relationship("Receta", back_populates="evolucion", lazy="selectin")
+

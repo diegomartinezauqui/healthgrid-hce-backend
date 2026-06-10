@@ -18,7 +18,7 @@ from app.schemas.receta import (
     RecetaMedicaDetallada,
 )
 from app.schemas.alerta import AlertaSmartPayload
-from app.services import receta_service
+from app.services import evolucion_service, receta_service
 
 router = APIRouter()
 
@@ -57,9 +57,8 @@ async def listar_recetas(
                 id_receta=receta.id_receta,
                 id_paciente=receta.id_paciente,
                 id_evolucion=receta.id_evolucion,
-                medicamento=receta.medicamento,
-                indicaciones=receta.indicaciones,
                 estado=receta.estado,
+                items=receta.items,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -105,9 +104,8 @@ async def obtener_receta(
         id_receta=receta.id_receta,
         id_paciente=receta.id_paciente,
         id_evolucion=receta.id_evolucion,
-        medicamento=receta.medicamento,
-        indicaciones=receta.indicaciones,
         estado=receta.estado,
+        items=receta.items,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas

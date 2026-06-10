@@ -21,6 +21,8 @@ def auth_headers() -> dict:
             "hce:episodes:read",
             "hce:medical-acts:write",
             "hce:medical-acts:read",
+            "hce:evoluciones:write",
+            "hce:evoluciones:read",
         ]
     )
     token_res = generate_dev_token(login_req)
@@ -142,3 +144,90 @@ async def test_crear_episodio_default_sede(
     ep_data = response.json()
     # Debe tomar la sede por defecto del token (3)
     assert ep_data["id_sede"] == 3
+
+
+@pytest.mark.asyncio
+async def test_evoluciones_flow(
+    client: AsyncClient, db: AsyncSession, auth_headers: dict
+):
+    # 1. Crear un paciente en la base de datos de test
+    paciente = Paciente(id_paciente=1003, datos_personales={"nombre": "Carlos"})
+    db.add(paciente)
+    await db.commit()
+
+    # 2. Crear episodio médico
+    episodio_payload = {
+        "tipo": "internacion",
+        "estado": "open",
+        "diagnostico_principal": "Observacion"
+    }
+    response_ep = await client.post(
+        "/api/v1/patients/1003/episodes",
+        json=episodio_payload,
+        headers=auth_headers
+    )
+    assert response_ep.status_code == 201
+    id_episodio = response_ep.json()["id_episodio"]
+
+    # 3. Crear evolución
+    ev_payload = {
+        "contenido": "Evolución inicial. Paciente estable."
+    }
+    response_ev = await client.post(
+        f"/api/v1/patients/1003/episodes/{id_episodio}/evoluciones",
+        json=ev_payload,
+        headers=auth_headers
+    )
+    assert response_ev.status_code == 201
+    ev_data = response_ev.json()
+    assert ev_data["id_episodio"] == id_episodio
+    assert ev_data["contenido"] == "Evolución inicial. Paciente estable."
+    assert ev_data["id_profesional"] == 42  # From token sub
+
+    id_evolucion = ev_data["id_evolucion"]
+
+    # 4. Listar evoluciones
+    response_list = await client.get(
+        f"/api/v1/patients/1003/episodes/{id_episodio}/evoluciones",
+        headers=auth_headers
+    )
+    assert response_list.status_code == 200
+    list_data = response_list.json()
+    assert list_data["total"] == 1
+    assert len(list_data["evoluciones"]) == 1
+    assert list_data["evoluciones"][0]["id_evolucion"] == id_evolucion
+
+    # 5. Obtener detalle
+    response_detail = await client.get(
+        f"/api/v1/patients/1003/episodes/{id_episodio}/evoluciones/{id_evolucion}",
+        headers=auth_headers
+    )
+    assert response_detail.status_code == 200
+    assert response_detail.json()["contenido"] == "Evolución inicial. Paciente estable."
+
+    # 6. Actualizar evolución
+    ev_patch_payload = {
+        "contenido": "Paciente presenta fiebre."
+    }
+    response_patch = await client.patch(
+        f"/api/v1/patients/1003/episodes/{id_episodio}/evoluciones/{id_evolucion}",
+        json=ev_patch_payload,
+        headers=auth_headers
+    )
+    assert response_patch.status_code == 200
+    assert response_patch.json()["contenido"] == "Paciente presenta fiebre."
+
+    # 7. Intentar crear evolución en episodio cerrado
+    # Cerrar episodio
+    await client.patch(
+        f"/api/v1/patients/1003/episodes/{id_episodio}",
+        json={"estado": "closed"},
+        headers=auth_headers
+    )
+
+    response_ev_closed = await client.post(
+        f"/api/v1/patients/1003/episodes/{id_episodio}/evoluciones",
+        json={"contenido": "Intento en cerrado"},
+        headers=auth_headers
+    )
+    assert response_ev_closed.status_code == 422

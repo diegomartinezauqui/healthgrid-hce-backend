@@ -24,21 +24,14 @@ async def get_recetas(
     desde_fecha: Optional[date] = None,
 ) -> list[Receta]:
     """Obtener listado de recetas con filtros opcionales."""
-    query = select(Receta)
-
-    if estado:
-        query = query.where(Receta.estado == estado)
-    if id_paciente:
-        query = query.where(Receta.id_paciente == id_paciente)
-
-    result = await db.execute(query)
-    return list(result.scalars().all())
+    return await receta_repo.get_recetas_filtradas(
+        db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha
+    )
 
 
 async def get_receta_by_id(db: AsyncSession, id_receta: int) -> Optional[Receta]:
     """Obtener una receta por su ID."""
-    result = await db.execute(select(Receta).where(Receta.id_receta == id_receta))
-    return result.scalar_one_or_none()
+    return await receta_repo.get_receta_detallada(db, id_receta)
 
 
 async def get_alertas_farmacologicas_paciente(

@@ -46,7 +46,8 @@ class Settings(BaseSettings):
         "hce:recetas:read,hce:recetas:write,"
         "hce:ordenes:read,hce:ordenes:write,"
         "hce:resultados:write,hce:internacion:write,"
-        "hce:episodes:read,hce:medical-acts:read,hce:insurance:read"
+        "hce:episodes:read,hce:medical-acts:read,hce:insurance:read,"
+        "hce:evoluciones:read,hce:evoluciones:write"
     )
 
     @property
