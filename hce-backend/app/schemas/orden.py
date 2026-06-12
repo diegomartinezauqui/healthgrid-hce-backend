@@ -8,6 +8,21 @@ from app.schemas.alerta import AlertaSmartPayload
 from common.enums.enums_orden import TipoEstudio, PrioridadOrden
 
 
+class OrdenCreate(BaseModel):
+    """Payload para crear una nueva orden médica de estudio."""
+
+    tipo_estudio: TipoEstudio = Field(..., examples=["Imagen"])
+    descripcion_pedido: Optional[str] = Field(
+        None,
+        max_length=500,
+        examples=["Resonancia Magnética de Cerebro con contraste"],
+    )
+    prioridad: PrioridadOrden = Field(
+        default=PrioridadOrden.NORMAL,
+        examples=["Normal"],
+    )
+
+
 class OrdenMedicaCompleta(BaseModel):
     """Orden médica con Smart Payload de alertas clínicas activas."""
 
@@ -21,6 +36,17 @@ class OrdenMedicaCompleta(BaseModel):
     alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
+
+
+class OrdenCreatedResponse(BaseModel):
+    """Respuesta 201 tras crear una orden médica."""
+
+    status: str = Field(default="success", examples=["success"])
+    message: str = Field(
+        default="Orden creada y evento Kafka publicado.",
+        examples=["Orden creada y evento Kafka publicado."],
+    )
+    id_orden: int = Field(..., examples=[4050])
 
 
 class OrdenListResponse(BaseModel):

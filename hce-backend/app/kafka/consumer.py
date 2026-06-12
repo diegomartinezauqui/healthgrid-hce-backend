@@ -15,6 +15,7 @@ TOPIC_PRESENTISMO = "clinica.turnos.presentismo"
 
 async def start_kafka_consumer():
     """Iniciar el consumer loop de Kafka."""
+    consumer = None
     try:
         from aiokafka import AIOKafkaConsumer
 
@@ -38,3 +39,8 @@ async def start_kafka_consumer():
 
     except Exception as e:
         logger.warning("⚠️ Kafka consumer no disponible: %s", e)
+        if consumer is not None:
+            try:
+                await consumer.stop()
+            except Exception:
+                pass

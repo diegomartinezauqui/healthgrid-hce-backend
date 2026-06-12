@@ -8,23 +8,26 @@ from app.schemas.alerta import AlertaSmartPayload
 from common.enums.enums_receta import EstadoReceta
 
 
-class ItemRecetaBase(BaseModel):
-    medicamento: str = Field(..., examples=["Amoxicilina 500mg"], max_length=300)
+class ItemRecetaCreate(BaseModel):
+    """Payload para crear un ítem de receta."""
+
+    medicamento: str = Field(..., max_length=300, examples=["Amoxicilina 500mg"])
     indicaciones: Optional[str] = Field(
         None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
     )
-    cantidad: int = Field(1, examples=[1], ge=1)
+    cantidad: int = Field(default=1, examples=[1])
 
 
-class ItemRecetaCreate(ItemRecetaBase):
-    """Schema para crear un ítem de receta."""
-    pass
+class ItemRecetaSchema(BaseModel):
+    """Esquema detallado de un ítem de receta."""
 
-
-class ItemRecetaSchema(ItemRecetaBase):
-    """Schema para leer un ítem de receta."""
-    id_item: int = Field(..., examples=[1])
+    id_item: int = Field(..., examples=[10])
     id_receta: int = Field(..., examples=[8502])
+    medicamento: str = Field(..., max_length=300, examples=["Amoxicilina 500mg"])
+    indicaciones: Optional[str] = Field(
+        None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
+    )
+    cantidad: int = Field(default=1, examples=[1])
 
     model_config = {"from_attributes": True}
 
@@ -45,6 +48,17 @@ class RecetaMedicaDetallada(BaseModel):
     alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}
+
+
+class RecetaCreatedResponse(BaseModel):
+    """Respuesta 201 tras crear una receta electrónica."""
+
+    status: str = Field(default="success", examples=["success"])
+    message: str = Field(
+        default="Receta creada y evento Kafka publicado.",
+        examples=["Receta creada y evento Kafka publicado."],
+    )
+    id_receta: int = Field(..., examples=[8502])
 
 
 class RecetaListResponse(BaseModel):

@@ -12,6 +12,8 @@ from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.alerta import AlertaSmartPayload
 from app.schemas.orden import (
+    OrdenCreate,
+    OrdenCreatedResponse,
     OrdenListResponse,
     OrdenMedicaCompleta,
 )
@@ -99,4 +101,42 @@ async def obtener_orden(
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
+    )
+
+
+@router.post(
+    "/pacientes/{id_paciente}/ordenes",
+    response_model=OrdenCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear orden médica de estudio",
+    description=(
+        "El médico genera una orden de estudio (Laboratorio, Imágenes o Anatomía Patológica) "
+        "para un paciente dentro de un episodio activo. "
+        "Al crearse, HCE publica automáticamente el evento Kafka "
+        "`clinica.estudios.orden_creada` para que M4 (Laboratorio) y M5 (Imágenes) lo procesen. "
+        "Permission claim requerido: `hce:ordenes:write`."
+    ),
+    responses={
+        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
+        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
+        422: {"model": ErrorResponse, "description": "Datos inválidos."},
+    },
+)
+async def crear_orden(
+    id_paciente: int,
+    body: OrdenCreate,
+    db: DbSession,
+    _user=Depends(require_permission("hce:ordenes:write")),
+):
+    orden = await orden_service.crear_orden(
+        db,
+        id_paciente=id_paciente,
+        tipo_estudio=body.tipo_estudio,
+        descripcion_pedido=body.descripcion_pedido,
+        prioridad=body.prioridad,
+    )
+    return OrdenCreatedResponse(
+        status="success",
+        message="Orden creada y evento Kafka publicado.",
+        id_orden=orden.id_orden,
     )

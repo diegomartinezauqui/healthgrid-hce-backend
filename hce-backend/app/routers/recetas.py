@@ -13,6 +13,7 @@ from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.receta import (
     RecetaCreate,
+    RecetaCreatedResponse,
     RecetaListResponse,
     RecetaMedicaDetallada,
 )
@@ -112,10 +113,6 @@ async def obtener_receta(
     )
 
 
-# ═══════════════════════════════════════════════════════════════════
-# RECETAS DE LA EVOLUCIÓN (HCE)
-# ═══════════════════════════════════════════════════════════════════
-
 @router.post(
     "/patients/{id_paciente}/episodes/{id_episodio}/evoluciones/{id_evolucion}/recetas",
     response_model=RecetaMedicaDetallada,
@@ -132,7 +129,7 @@ async def obtener_receta(
         422: {"model": ErrorResponse},
     },
 )
-async def crear_receta(
+async def registrar_receta(
     id_paciente: int,
     id_episodio: int,
     id_evolucion: int,
@@ -180,3 +177,4 @@ async def crear_receta(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
         )
+
