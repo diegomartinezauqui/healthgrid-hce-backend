@@ -8,6 +8,30 @@ from app.schemas.alerta import AlertaSmartPayload
 from common.enums.enums_receta import EstadoReceta
 
 
+class ItemRecetaCreate(BaseModel):
+    """Payload para crear un ítem de receta."""
+
+    medicamento: str = Field(..., max_length=300, examples=["Amoxicilina 500mg"])
+    indicaciones: Optional[str] = Field(
+        None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
+    )
+    cantidad: int = Field(default=1, examples=[1])
+
+
+class ItemRecetaSchema(BaseModel):
+    """Esquema detallado de un ítem de receta."""
+
+    id_item: int = Field(..., examples=[10])
+    id_receta: int = Field(..., examples=[8502])
+    medicamento: str = Field(..., max_length=300, examples=["Amoxicilina 500mg"])
+    indicaciones: Optional[str] = Field(
+        None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
+    )
+    cantidad: int = Field(default=1, examples=[1])
+
+    model_config = {"from_attributes": True}
+
+
 class RecetaCreate(BaseModel):
     """Payload para crear una nueva receta electrónica."""
 

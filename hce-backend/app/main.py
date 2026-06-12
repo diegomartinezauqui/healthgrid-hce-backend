@@ -6,6 +6,7 @@ Configura routers, lifespan y middleware.
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.kafka.consumer import start_kafka_consumer
@@ -36,11 +37,22 @@ async def lifespan(app: FastAPI):
     """
     # ── Startup ──
     print("🏥 HCE Module starting up...")
-    await kafka_producer.start()
-    asyncio.create_task(start_kafka_consumer())
+    consumer_task = None
+    if settings.ENABLE_KAFKA:
+        await kafka_producer.start()
+        consumer_task = asyncio.create_task(start_kafka_consumer())
+    else:
+        print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
+
     yield
     # ── Shutdown ──
     print("🥞 HCE Module shutting down...")
+    if consumer_task is not None and not consumer_task.done():
+        consumer_task.cancel()
+        try:
+            await consumer_task
+        except asyncio.CancelledError:
+            pass
     await kafka_producer.stop()
 
 
@@ -53,6 +65,15 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
     root_path="",
+)
+
+# ─── Configuración de CORS ──────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # En producción, reemplazar con el dominio del frontend
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # ─── Registrar routers con prefijo base /api/v1 ──────────────────

@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     CORE_BASE_URL: str = "http://localhost:8010/api/v1"
     M6_BASE_URL: str = "http://localhost:8006/api"
 
+    # ─── Kafka opcional ──────────────────────────────────────────
+    ENABLE_KAFKA: bool = False
+
     # ─── Aplicación ───────────────────────────────────────────────
     APP_ENV: str = "development"
     APP_DEBUG: bool = True

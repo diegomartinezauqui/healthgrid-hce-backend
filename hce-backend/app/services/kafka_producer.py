@@ -43,6 +43,11 @@ class KafkaProducer:
                 "⚠️ No se pudo conectar a Kafka (%s). Los eventos se loguearán localmente.",
                 e,
             )
+            if self._producer is not None:
+                try:
+                    await self._producer.stop()
+                except Exception:
+                    pass
             self._producer = None
 
     async def stop(self):
