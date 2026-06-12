@@ -9,7 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.alerta_clinica import AlertaClinicaPaciente
 from app.models.receta import Receta
+from app.repositories.receta_repository import receta_repo
 from app.repositories.alerta_repository import alerta_repo
+from app.schemas.receta import RecetaCreate
 from app.schemas.kafka_events import EventoKafkaNuevaReceta
 from app.services.kafka_producer import kafka_producer, TOPIC_RECETA_CREADA
 from common.enums.enums_receta import EstadoReceta
@@ -41,49 +43,53 @@ async def get_alertas_farmacologicas_paciente(
     return await alerta_repo.get_activas_by_paciente(db, id_paciente)
 
 
-async def crear_receta(
-    db: AsyncSession,
-    id_paciente: int,
-    medicamento: str,
-    tipo_paciente: str = "Ambulatorio",
-    id_evolucion: Optional[int] = None,
-    indicaciones: Optional[str] = None,
+async def registrar_receta(
+    db: AsyncSession, id_paciente: int, id_episodio: int, id_evolucion: int, data: RecetaCreate
 ) -> Receta:
-    """
-    Crear una nueva receta electrónica y publicar el evento Kafka
-    clinica.farmacia.receta_creada para que M3 (Farmacia) la procese.
+    """Registra una nueva receta con sus medicamentos y notifica a M3 (Farmacia)."""
+    
+    # Determinar tipo_paciente buscando el episodio
+    from app.repositories.episodio_repository import episodio_repo
+    from common.enums.enums_episodio import TipoEpisodio
+    
+    episodio = await episodio_repo.get(db, id_episodio)
+    tipo_paciente = "Internado" if episodio and episodio.tipo == TipoEpisodio.INTERNACION else "Ambulatorio"
 
-    Args:
-        db: Sesión de base de datos.
-        id_paciente: ID del paciente al que se receta.
-        medicamento: Nombre y dosis del medicamento.
-        tipo_paciente: 'Internado' o 'Ambulatorio' (default Ambulatorio).
-        id_evolucion: ID de la evolución médica de origen (opcional).
-        indicaciones: Instrucciones de administración (opcional).
-
-    Returns:
-        Receta recién creada y persistida.
-    """
-    receta = Receta(
+    # Crear cabecera
+    nueva_receta = Receta(
         id_paciente=id_paciente,
-        medicamento=medicamento,
-        estado=EstadoReceta.ACTIVA,
         id_evolucion=id_evolucion,
-        indicaciones=indicaciones,
+        estado=EstadoReceta.ACTIVA,
     )
-    db.add(receta)
-    await db.flush()  # Para obtener el id_receta generado
+    db.add(nueva_receta)
+    await db.flush()  # Para obtener el id_receta
+
+    # Crear items
+    from app.models.item_receta import ItemReceta
+    
+    for item_data in data.items:
+        nuevo_item = ItemReceta(
+            id_receta=nueva_receta.id_receta,
+            medicamento=item_data.medicamento,
+            indicaciones=item_data.indicaciones,
+            cantidad=item_data.cantidad,
+        )
+        db.add(nuevo_item)
+    
+    await db.commit()
+    await db.refresh(nueva_receta)
 
     # Publicar evento Kafka → M3 (Farmacia)
     evento = EventoKafkaNuevaReceta(
-        id_receta=receta.id_receta,
+        id_receta=nueva_receta.id_receta,
         tipo_paciente=tipo_paciente,
     )
     await kafka_producer.publish(TOPIC_RECETA_CREADA, evento.model_dump(mode="json"))
     logger.info(
-        "📤 Evento receta_creada publicado — receta: %s, paciente: %s",
-        receta.id_receta,
+        "📤 Evento receta_creada publicado — receta: %s, paciente: %s (Maestro-Detalle)",
+        nueva_receta.id_receta,
         id_paciente,
     )
 
-    return receta
+    return await receta_repo.get_receta_detallada(db, nueva_receta.id_receta)
+

@@ -114,39 +114,67 @@ async def obtener_receta(
 
 
 @router.post(
-    "/pacientes/{id_paciente}/recetas",
-    response_model=RecetaCreatedResponse,
+    "/patients/{id_paciente}/episodes/{id_episodio}/evoluciones/{id_evolucion}/recetas",
+    response_model=RecetaMedicaDetallada,
     status_code=status.HTTP_201_CREATED,
-    summary="Crear receta electrónica (prescripción médica)",
+    summary="Registrar una receta médica",
     description=(
-        "El médico prescribe una receta electrónica para un paciente dentro de una evolución médica. "
-        "Al crearse, HCE publica automáticamente el evento Kafka "
-        "`clinica.farmacia.receta_creada` para que M3 (Farmacia) lo procese "
-        "y disponga la medicación. "
-        "Permission claim requerido: `hce:recetas:write`."
+        "Permite al médico registrar una receta electrónica asociada a la nota de evolución. "
+        "Admite múltiples medicamentos. Al guardarse, se notifica automáticamente a Farmacia."
     ),
     responses={
-        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
-        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
-        422: {"model": ErrorResponse, "description": "Datos inválidos."},
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+        422: {"model": ErrorResponse},
     },
 )
-async def crear_receta(
+async def registrar_receta(
     id_paciente: int,
+    id_episodio: int,
+    id_evolucion: int,
     body: RecetaCreate,
     db: DbSession,
-    _user=Depends(require_permission("hce:recetas:write")),
+    user=Depends(require_permission("hce:recetas:write")),
 ):
-    receta = await receta_service.crear_receta(
-        db,
-        id_paciente=id_paciente,
-        medicamento=body.medicamento,
-        tipo_paciente=body.tipo_paciente,
-        id_evolucion=body.id_evolucion,
-        indicaciones=body.indicaciones,
-    )
-    return RecetaCreatedResponse(
-        status="success",
-        message="Receta creada y evento Kafka publicado.",
-        id_receta=receta.id_receta,
-    )
+    try:
+        # Validamos que la evolución exista y pertenezca al episodio/paciente
+        evolucion = await evolucion_service.get_evolucion_detalle(
+            db, id_paciente, id_episodio, id_evolucion
+        )
+        if not evolucion:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "NOT_FOUND", "message": "La evolución solicitada no fue encontrada."},
+            )
+            
+        receta = await receta_service.registrar_receta(
+            db, id_paciente, id_episodio, id_evolucion, body
+        )
+        
+        alertas = await receta_service.get_alertas_farmacologicas_paciente(
+            db, id_paciente
+        )
+        
+        return RecetaMedicaDetallada(
+            id_receta=receta.id_receta,
+            id_paciente=receta.id_paciente,
+            id_evolucion=receta.id_evolucion,
+            estado=receta.estado,
+            items=receta.items,
+            alertas_clinicas=[
+                AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
+                for a in alertas
+            ],
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
+        )
+

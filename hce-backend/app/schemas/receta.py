@@ -33,22 +33,8 @@ class ItemRecetaSchema(BaseModel):
 
 
 class RecetaCreate(BaseModel):
-    """Payload para crear una nueva receta electrónica."""
-
-    id_evolucion: Optional[int] = Field(
-        None,
-        examples=[302],
-        description="ID de la evolución médica de origen (opcional).",
-    )
-    medicamento: str = Field(..., max_length=300, examples=["Amoxicilina 500mg"])
-    indicaciones: Optional[str] = Field(
-        None, examples=["Tomar 1 comprimido cada 8 horas por 7 días."]
-    )
-    tipo_paciente: str = Field(
-        default="Ambulatorio",
-        examples=["Ambulatorio"],
-        description="'Internado' o 'Ambulatorio'. Determina el payload del evento Kafka.",
-    )
+    """Payload para que un médico cree una receta completa con múltiples medicamentos."""
+    items: List[ItemRecetaCreate] = Field(..., min_length=1)
 
 
 class RecetaMedicaDetallada(BaseModel):

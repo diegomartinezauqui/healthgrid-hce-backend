@@ -3,6 +3,7 @@
 import logging
 from datetime import date, datetime, timezone
 from typing import Optional, Sequence
+from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -128,9 +129,14 @@ async def actualizar_episodio(
         episodio.fecha_cierre = datetime.now(timezone.utc)
         # Notificar a M7(Facturacion) y M6(Internacion)
         evento = EventoKafkaEpisodioCerrado(
+            id_evento=uuid4(),
+            fecha_ocurrencia=episodio.fecha_cierre,
             id_episodio=id_episodio,
             id_paciente=id_paciente,
-            fecha_cierre=episodio.fecha_cierre
+            id_sede=episodio.id_sede,
+            tipo_episodio=episodio.tipo,
+            id_medico_cierre=episodio.id_medico_responsable,
+            total_actos_medicos=len(episodio.actos_medicos),
         )
         await kafka_producer.publish(TOPIC_EPISODIO_CERRADO, evento.model_dump(mode="json"))
 
