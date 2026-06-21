@@ -1,0 +1,5066 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "API Módulo 1 - Historia Clínica Electrónica (HCE)",
+    "description": "Repositorio central de datos médicos del sistema Health Grid. Gestiona consultas, diagnósticos, tratamientos y fichas médicas.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/dev/login": {
+      "post": {
+        "tags": [
+          "🔧 Desarrollo"
+        ],
+        "summary": "[DEV] Obtener token JWT de desarrollo",
+        "description": "Genera un JWT firmado con la misma clave que Core (M10). El token funciona en todos los endpoints protegidos.\n\n**Sin body**: genera token con el usuario por defecto (dr.dev, rol médico, todos los permisos).\n\n**Con body**: permite personalizar sub, username, role, permissions y duración.",
+        "operationId": "dev_login_api_v1_dev_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/DevLoginRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DevLoginResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/ficha-medica": {
+      "post": {
+        "tags": [
+          "Ficha Médica (HCE)"
+        ],
+        "summary": "Crear ficha médica de un paciente",
+        "description": "Crea la ficha médica permanente de un paciente en la Historia Clínica. Contiene datos clínicos estáticos como grupo sanguíneo, peso, altura y observaciones generales. Solo puede existir una ficha por paciente.",
+        "operationId": "crear_ficha_medica_api_v1_pacientes__id_paciente__ficha_medica_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FichaMedicaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaMedicaSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "409": {
+            "description": "Ya existe una ficha médica para este paciente.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Ficha Médica (HCE)"
+        ],
+        "summary": "Obtener ficha médica de un paciente",
+        "description": "Retorna los datos clínicos permanentes del paciente registrados en su ficha médica.",
+        "operationId": "obtener_ficha_medica_api_v1_pacientes__id_paciente__ficha_medica_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaMedicaSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Ficha Médica (HCE)"
+        ],
+        "summary": "Actualizar ficha médica de un paciente",
+        "description": "Actualiza parcialmente la ficha médica del paciente. Solo se modifican los campos enviados en el body.",
+        "operationId": "actualizar_ficha_medica_api_v1_pacientes__id_paciente__ficha_medica_patch",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FichaMedicaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaMedicaSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/antecedentes": {
+      "get": {
+        "tags": [
+          "Ficha Médica — Antecedentes"
+        ],
+        "summary": "Listar antecedentes clínicos de un paciente",
+        "description": "Retorna todos los antecedentes registrados del paciente.",
+        "operationId": "listar_antecedentes_api_v1_pacientes__id_paciente__antecedentes_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AntecedenteSchema"
+                  },
+                  "title": "Response Listar Antecedentes Api V1 Pacientes  Id Paciente  Antecedentes Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Paciente no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ficha Médica — Antecedentes"
+        ],
+        "summary": "Registrar un antecedente clínico",
+        "description": "Agrega un nuevo antecedente al historial clínico del paciente.",
+        "operationId": "crear_antecedente_api_v1_pacientes__id_paciente__antecedentes_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AntecedenteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AntecedenteSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Paciente no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/antecedentes/{id_antecedente}": {
+      "patch": {
+        "tags": [
+          "Ficha Médica — Antecedentes"
+        ],
+        "summary": "Actualizar un antecedente clínico",
+        "description": "Actualización parcial de un antecedente. Solo se pisan los campos enviados.",
+        "operationId": "actualizar_antecedente_api_v1_pacientes__id_paciente__antecedentes__id_antecedente__patch",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_antecedente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Antecedente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AntecedenteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AntecedenteSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/alertas": {
+      "get": {
+        "tags": [
+          "Ficha Médica — Alertas Clínicas"
+        ],
+        "summary": "Listar alertas clínicas de un paciente",
+        "description": "Retorna todas las alertas del paciente (Activas y Resueltas).",
+        "operationId": "listar_alertas_api_v1_pacientes__id_paciente__alertas_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AlertaSchema"
+                  },
+                  "title": "Response Listar Alertas Api V1 Pacientes  Id Paciente  Alertas Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Paciente no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ficha Médica — Alertas Clínicas"
+        ],
+        "summary": "Registrar una alerta clínica",
+        "description": "Crea una nueva consideración/alerta de seguridad para el paciente.",
+        "operationId": "crear_alerta_api_v1_pacientes__id_paciente__alertas_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Paciente no encontrado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/alertas/{id_alerta}": {
+      "patch": {
+        "tags": [
+          "Ficha Médica — Alertas Clínicas"
+        ],
+        "summary": "Resolver una alerta clínica",
+        "description": "Cambia el estado de la alerta a Resuelta y registra la resolución.",
+        "operationId": "resolver_alerta_api_v1_pacientes__id_paciente__alertas__id_alerta__patch",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_alerta",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Alerta"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertaUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertaSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Episodios"
+        ],
+        "summary": "Listar episodios médicos de un paciente",
+        "description": "Permite a Facturación obtener el listado de episodios de un paciente para recopilar todos los actos médicos a liquidar.",
+        "operationId": "listar_episodios_api_v1_patients__id_paciente__episodes_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "desde_fecha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde Fecha"
+            }
+          },
+          {
+            "name": "hasta_fecha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Hasta Fecha"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodioListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Atención Clínica — Episodios"
+        ],
+        "summary": "Abrir un nuevo episodio médico",
+        "description": "Permite registrar/abrir un nuevo episodio de atención (guardia, consulta externa, etc.) para el paciente.",
+        "operationId": "crear_episodio_api_v1_patients__id_paciente__episodes_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodioCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodioDetalle"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes/{id_episodio}": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Episodios"
+        ],
+        "summary": "Obtener detalle completo de un episodio",
+        "description": "Retorna el detalle de un episodio médico específico incluyendo todos los actos médicos registrados. Principal insumo para liquidación.",
+        "operationId": "obtener_episodio_api_v1_patients__id_paciente__episodes__id_episodio__get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodioDetalle"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Atención Clínica — Episodios"
+        ],
+        "summary": "Actualizar parcialmente un episodio médico",
+        "description": "Permite realizar modificaciones parciales en el episodio o cerrarlo enviando estado='closed'.",
+        "operationId": "actualizar_episodio_api_v1_patients__id_paciente__episodes__id_episodio__patch",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EpisodioUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EpisodioDetalle"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes/{id_episodio}/medical-acts": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Actos Médicos"
+        ],
+        "summary": "Listar actos médicos de un episodio",
+        "description": "Lista todos los actos médicos registrados dentro de un episodio. Cada acto incluye el codigo_nomenclador para facturación.",
+        "operationId": "listar_actos_medicos_api_v1_patients__id_paciente__episodes__id_episodio__medical_acts_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActoMedicoListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Atención Clínica — Actos Médicos"
+        ],
+        "summary": "Registrar un acto médico en un episodio",
+        "description": "Permite registrar prestaciones/actos médicos dentro de un episodio activo de atención.",
+        "operationId": "crear_acto_medico_api_v1_patients__id_paciente__episodes__id_episodio__medical_acts_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ActoMedicoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActoMedicoSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes/{id_episodio}/evoluciones": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Evoluciones"
+        ],
+        "summary": "Listar evoluciones médicas de un episodio",
+        "description": "Lista todas las notas de evolución registradas dentro de un episodio, ordenadas cronológicamente.",
+        "operationId": "listar_evoluciones_api_v1_patients__id_paciente__episodes__id_episodio__evoluciones_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolucionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Atención Clínica — Evoluciones"
+        ],
+        "summary": "Registrar una evolución médica en un episodio",
+        "description": "Permite registrar una nota de evolución clínica dentro de un episodio activo. El profesional autor se obtiene automáticamente del token JWT.",
+        "operationId": "crear_evolucion_api_v1_patients__id_paciente__episodes__id_episodio__evoluciones_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvolucionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolucionSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes/{id_episodio}/evoluciones/{id_evolucion}": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Evoluciones"
+        ],
+        "summary": "Obtener detalle de una evolución médica",
+        "description": "Retorna el contenido completo de una nota de evolución específica.",
+        "operationId": "obtener_evolucion_api_v1_patients__id_paciente__episodes__id_episodio__evoluciones__id_evolucion__get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          },
+          {
+            "name": "id_evolucion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Evolucion"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolucionSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Atención Clínica — Evoluciones"
+        ],
+        "summary": "Actualizar parcialmente una evolución médica",
+        "description": "Permite corregir el contenido de una nota de evolución existente.",
+        "operationId": "actualizar_evolucion_api_v1_patients__id_paciente__episodes__id_episodio__evoluciones__id_evolucion__patch",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          },
+          {
+            "name": "id_evolucion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Evolucion"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EvolucionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvolucionSchema"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recetas": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Recetas"
+        ],
+        "summary": "Consultar listado de recetas (sincronización masiva)",
+        "description": "Permite al Módulo 3 (Farmacia) obtener todas las recetas generadas. Útil para auditorías, cierres de lote o recuperación de datos tras caídas de Kafka.",
+        "operationId": "listar_recetas_api_v1_recetas_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Estado"
+            }
+          },
+          {
+            "name": "id_paciente",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "desde_fecha",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Desde Fecha"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecetaListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Token JWT ausente, inválido o expirado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Sin permiso requerido.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/recetas/{id_receta}": {
+      "get": {
+        "tags": [
+          "Atención Clínica — Recetas"
+        ],
+        "summary": "Obtener detalles de receta (con alertas farmacológicas)",
+        "description": "Endpoint al que Farmacia llama tras recibir el evento Kafka clinica.farmacia.receta_creada para obtener la medicación recetada y cruzarla con las alergias del paciente.",
+        "operationId": "obtener_receta_api_v1_recetas__id_receta__get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_receta",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Receta"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecetaMedicaDetallada"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/patients/{id_paciente}/episodes/{id_episodio}/evoluciones/{id_evolucion}/recetas": {
+      "post": {
+        "tags": [
+          "Atención Clínica — Recetas"
+        ],
+        "summary": "Registrar una receta médica",
+        "description": "Permite al médico registrar una receta electrónica asociada a la nota de evolución. Admite múltiples medicamentos. Al guardarse, se notifica automáticamente a Farmacia.",
+        "operationId": "crear_receta_api_v1_patients__id_paciente__episodes__id_episodio__evoluciones__id_evolucion__recetas_post",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          },
+          {
+            "name": "id_episodio",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Episodio"
+            }
+          },
+          {
+            "name": "id_evolucion",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Evolucion"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecetaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecetaMedicaDetallada"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unprocessable Entity"
+          }
+        }
+      }
+    },
+    "/api/v1/hce/health": {
+      "get": {
+        "tags": [
+          "Integración M10 (Core)"
+        ],
+        "summary": "Health check del módulo HCE",
+        "description": "Endpoint de estado que Core puede usar para monitorear la disponibilidad del módulo HCE. No requiere autenticación.",
+        "operationId": "health_check_api_v1_hce_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/hce/notify-permission-change": {
+      "post": {
+        "tags": [
+          "Integración M10 (Core)"
+        ],
+        "summary": "Notificar a Core un cambio de permisos originado en HCE",
+        "description": "Proxy que reenvía la notificación al Módulo 10 (Core).",
+        "operationId": "notify_permission_change_api_v1_hce_notify_permission_change_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PermissionChangeNotification"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PermissionChangeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/ordenes": {
+      "get": {
+        "tags": [
+          "Integración M4/M5 (Estudios)"
+        ],
+        "summary": "Consultar órdenes pendientes (sincronización masiva)",
+        "description": "Endpoint utilizado por M4 y M5 como red de seguridad para consultar lotes completos de estudios pendientes.",
+        "operationId": "listar_ordenes_api_v1_ordenes_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tipo_estudio",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tipo Estudio"
+            }
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "Pendiente",
+              "title": "Estado"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdenListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ordenes/{id_orden}": {
+      "get": {
+        "tags": [
+          "Integración M4/M5 (Estudios)"
+        ],
+        "summary": "Obtener detalles de orden (Smart Payload con alertas clínicas)",
+        "description": "Endpoint utilizado por M4 y M5 para descargar la información clínica de la orden y las alertas de seguridad.",
+        "operationId": "obtener_orden_api_v1_ordenes__id_orden__get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_orden",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Orden"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdenMedicaCompleta"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/resultados": {
+      "post": {
+        "tags": [
+          "Integración M4/M5 (Estudios)"
+        ],
+        "summary": "Registrar resultado de estudio",
+        "description": "Endpoint utilizado por M4 (Laboratorio) y M5 (Imágenes) para enviar los resultados de un estudio médico finalizado a la HCE.",
+        "operationId": "registrar_resultado_api_v1_resultados_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResultadoEstudioRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultadoCreatedResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/internacion/ingreso": {
+      "post": {
+        "tags": [
+          "Integración M6 (Camas)"
+        ],
+        "summary": "Notificar ingreso de paciente (M6 → HCE)",
+        "description": "Endpoint utilizado por el Módulo 6 para notificar a la HCE que un paciente fue ingresado físicamente a una cama. Esto dispara la creación del Episodio de Internación en la Historia Clínica.",
+        "operationId": "notificar_ingreso_api_v1_internacion_ingreso_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngresoInternacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IngresoInternacionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Datos de ingreso inválidos.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/patients/{id_paciente}/insurance": {
+      "get": {
+        "tags": [
+          "Integración M7 (Facturación)"
+        ],
+        "summary": "Obtener cobertura médica vigente del paciente",
+        "description": "Retorna la obra social o prepaga vigente del paciente. Facturación necesita este dato para aplicar el nomenclador correcto.",
+        "operationId": "obtener_cobertura_api_v1_patients__id_paciente__insurance_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InsuranceResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/historial/recetas": {
+      "get": {
+        "tags": [
+          "Integración M8 (Portal del Paciente)"
+        ],
+        "summary": "Consultar historial de recetas del paciente (Para M8)",
+        "description": "Endpoint sincrónico consumido por el Portal del Paciente (M8) para renderizar la sección 'Mi Salud', listando todas las recetas.",
+        "operationId": "historial_recetas_api_v1_pacientes__id_paciente__historial_recetas_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RecetaMedicaDetallada"
+                  },
+                  "title": "Response Historial Recetas Api V1 Pacientes  Id Paciente  Historial Recetas Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pacientes/{id_paciente}/historial/resultados": {
+      "get": {
+        "tags": [
+          "Integración M8 (Portal del Paciente)"
+        ],
+        "summary": "Consultar resultados de estudios del paciente (Para M8)",
+        "description": "Endpoint sincrónico consumido por el Portal del Paciente (M8) para mostrar los resultados de estudios médicos finalizados.",
+        "operationId": "historial_resultados_api_v1_pacientes__id_paciente__historial_resultados_get",
+        "security": [
+          {
+            "JWT Bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id_paciente",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Id Paciente"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ResultadoEstudioResumen"
+                  },
+                  "title": "Response Historial Resultados Api V1 Pacientes  Id Paciente  Historial Resultados Get"
+                }
+              }
+            }
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Unauthorized"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Forbidden"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not Found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActoMedicoCreate": {
+        "properties": {
+          "codigo_nomenclador": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Nomenclador",
+            "examples": [
+              "01.01.01"
+            ]
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion",
+            "examples": [
+              "Consulta médica ambulatoria"
+            ]
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoActoMedico",
+            "examples": [
+              "consulta"
+            ]
+          },
+          "id_profesional": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Profesional",
+            "examples": [
+              42
+            ]
+          },
+          "fecha_realizacion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Realizacion",
+            "description": "Fecha de realización. Si no se envía, se usa la fecha/hora actual."
+          },
+          "cantidad": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Cantidad",
+            "default": 1,
+            "examples": [
+              1
+            ]
+          },
+          "observaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo"
+        ],
+        "title": "ActoMedicoCreate",
+        "description": "Payload para registrar un nuevo acto médico en un episodio."
+      },
+      "ActoMedicoListResponse": {
+        "properties": {
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio",
+            "examples": [
+              700
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "examples": [
+              4
+            ]
+          },
+          "actos_medicos": {
+            "items": {
+              "$ref": "#/components/schemas/ActoMedicoSchema"
+            },
+            "type": "array",
+            "title": "Actos Medicos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_episodio",
+          "total",
+          "actos_medicos"
+        ],
+        "title": "ActoMedicoListResponse",
+        "description": "Lista de actos médicos de un episodio."
+      },
+      "ActoMedicoSchema": {
+        "properties": {
+          "id_acto_medico": {
+            "type": "integer",
+            "title": "Id Acto Medico",
+            "examples": [
+              9001
+            ]
+          },
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio",
+            "examples": [
+              700
+            ]
+          },
+          "codigo_nomenclador": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Nomenclador",
+            "examples": [
+              "01.01.01"
+            ]
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion",
+            "examples": [
+              "Consulta médica ambulatoria - primera vez"
+            ]
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoActoMedico",
+            "examples": [
+              "consulta"
+            ]
+          },
+          "id_profesional": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Profesional",
+            "examples": [
+              42
+            ]
+          },
+          "fecha_realizacion": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Realizacion",
+            "examples": [
+              "2025-03-10T09:15:00Z"
+            ]
+          },
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad",
+            "default": 1,
+            "examples": [
+              1
+            ]
+          },
+          "observaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_acto_medico",
+          "id_episodio",
+          "tipo",
+          "fecha_realizacion"
+        ],
+        "title": "ActoMedicoSchema",
+        "description": "Acto médico registrado dentro de un episodio."
+      },
+      "AlertaCreate": {
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoConsideracion",
+            "examples": [
+              "Alergia"
+            ]
+          },
+          "severidad": {
+            "$ref": "#/components/schemas/SeveridadAlerta",
+            "examples": [
+              "Severa"
+            ]
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion",
+            "examples": [
+              "Alergia severa a penicilina y derivados."
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "severidad",
+          "descripcion"
+        ],
+        "title": "AlertaCreate",
+        "description": "Body para crear una nueva alerta clínica."
+      },
+      "AlertaSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoConsideracion"
+          },
+          "severidad": {
+            "$ref": "#/components/schemas/SeveridadAlerta"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoAlerta"
+          },
+          "fecha_registro": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Registro"
+          },
+          "id_medico_registro": {
+            "type": "integer",
+            "title": "Id Medico Registro"
+          },
+          "fecha_resolucion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Resolucion"
+          },
+          "id_medico_resolucion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Medico Resolucion"
+          },
+          "motivo_resolucion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motivo Resolucion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "id_paciente",
+          "tipo",
+          "severidad",
+          "descripcion",
+          "estado",
+          "fecha_registro",
+          "id_medico_registro"
+        ],
+        "title": "AlertaSchema",
+        "description": "Respuesta completa de una alerta clínica."
+      },
+      "AlertaSmartPayload": {
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoConsideracion"
+          },
+          "severidad": {
+            "$ref": "#/components/schemas/SeveridadAlerta"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "severidad",
+          "descripcion"
+        ],
+        "title": "AlertaSmartPayload",
+        "description": "Schema reducido para Smart Payload en órdenes y recetas.\nSolo incluye lo necesario para que M3/M4/M5 tomen decisiones clínicas."
+      },
+      "AlertaUpdate": {
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoAlerta",
+            "examples": [
+              "Resuelta"
+            ]
+          },
+          "motivo_resolucion": {
+            "type": "string",
+            "title": "Motivo Resolucion",
+            "examples": [
+              "Alergia superada, confirmado por alergista."
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado",
+          "motivo_resolucion"
+        ],
+        "title": "AlertaUpdate",
+        "description": "Body para resolver una alerta clínica (PATCH)."
+      },
+      "AntecedenteCreate": {
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoAntecedente",
+            "examples": [
+              "Quirurgico"
+            ]
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion",
+            "examples": [
+              "Colecistectomía laparoscópica"
+            ]
+          },
+          "fecha_suceso": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Suceso",
+            "examples": [
+              "2018-04-15"
+            ]
+          },
+          "observaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones",
+            "examples": [
+              "Sin complicaciones postoperatorias."
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo",
+          "descripcion"
+        ],
+        "title": "AntecedenteCreate",
+        "description": "Body para registrar un nuevo antecedente."
+      },
+      "AntecedenteSchema": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente"
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoAntecedente"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          },
+          "fecha_suceso": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Suceso"
+          },
+          "observaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones"
+          },
+          "fecha_registro": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Registro"
+          },
+          "id_medico_registro": {
+            "type": "integer",
+            "title": "Id Medico Registro"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "id_paciente",
+          "tipo",
+          "descripcion",
+          "fecha_registro",
+          "id_medico_registro"
+        ],
+        "title": "AntecedenteSchema",
+        "description": "Respuesta completa de un antecedente clínico."
+      },
+      "AntecedenteUpdate": {
+        "properties": {
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "fecha_suceso": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Suceso"
+          },
+          "observaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones"
+          }
+        },
+        "type": "object",
+        "title": "AntecedenteUpdate",
+        "description": "Body para actualización parcial de un antecedente (PATCH)."
+      },
+      "DevLoginRequest": {
+        "properties": {
+          "sub": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sub",
+            "description": "ID del usuario (médico)",
+            "examples": [
+              1
+            ]
+          },
+          "username": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Username",
+            "description": "Nombre de usuario",
+            "examples": [
+              "dr.dev"
+            ]
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role",
+            "description": "Rol del usuario",
+            "examples": [
+              "medico"
+            ]
+          },
+          "permissions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Permissions",
+            "description": "Lista de permisos",
+            "examples": [
+              [
+                "hce:read",
+                "hce:write",
+                "hce:alertas:read",
+                "hce:alertas:write",
+                "hce:antecedentes:read",
+                "hce:antecedentes:write",
+                "hce:ficha-medica:read",
+                "hce:ficha-medica:write",
+                "hce:recetas:read",
+                "hce:recetas:write",
+                "hce:ordenes:read",
+                "hce:resultados:write",
+                "hce:internacion:write",
+                "hce:episodes:read",
+                "hce:medical-acts:read",
+                "hce:insurance:read",
+                "hce:evoluciones:read",
+                "hce:evoluciones:write"
+              ]
+            ]
+          },
+          "sede_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sede Id",
+            "description": "ID de la sede",
+            "examples": [
+              1
+            ]
+          },
+          "expire_hours": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expire Hours",
+            "description": "Horas de validez del token (default: 24)",
+            "examples": [
+              24
+            ]
+          }
+        },
+        "type": "object",
+        "title": "DevLoginRequest",
+        "description": "Body opcional para personalizar el token de desarrollo.\nSi no se envía ningún campo, se usan los valores por defecto de settings."
+      },
+      "DevLoginResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "expires_in_hours": {
+            "type": "integer",
+            "title": "Expires In Hours"
+          },
+          "user": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "User"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "expires_in_hours",
+          "user"
+        ],
+        "title": "DevLoginResponse",
+        "description": "Respuesta del endpoint de login de desarrollo."
+      },
+      "EpisodioCreate": {
+        "properties": {
+          "tipo": {
+            "$ref": "#/components/schemas/TipoEpisodio",
+            "examples": [
+              "internacion"
+            ]
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoEpisodio",
+            "default": "open",
+            "examples": [
+              "open"
+            ]
+          },
+          "id_sede": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Sede",
+            "examples": [
+              3
+            ]
+          },
+          "diagnostico_principal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnostico Principal",
+            "examples": [
+              "J18.9 - Neumonía no especificada"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo"
+        ],
+        "title": "EpisodioCreate",
+        "description": "Creación de episodio médico."
+      },
+      "EpisodioDetalle": {
+        "properties": {
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio",
+            "examples": [
+              700
+            ]
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoEpisodio",
+            "examples": [
+              "internacion"
+            ]
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoEpisodio",
+            "examples": [
+              "closed"
+            ]
+          },
+          "id_sede": {
+            "type": "integer",
+            "title": "Id Sede",
+            "examples": [
+              3
+            ]
+          },
+          "id_medico_responsable": {
+            "type": "integer",
+            "title": "Id Medico Responsable",
+            "examples": [
+              42
+            ]
+          },
+          "diagnostico_principal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnostico Principal",
+            "examples": [
+              "J18.9 - Neumonía no especificada"
+            ]
+          },
+          "fecha_apertura": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Apertura",
+            "examples": [
+              "2025-03-10T09:00:00Z"
+            ]
+          },
+          "fecha_cierre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Cierre",
+            "examples": [
+              "2025-03-15T11:00:00Z"
+            ]
+          },
+          "actos_medicos": {
+            "items": {
+              "$ref": "#/components/schemas/ActoMedicoSchema"
+            },
+            "type": "array",
+            "title": "Actos Medicos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_episodio",
+          "id_paciente",
+          "tipo",
+          "estado",
+          "id_sede",
+          "id_medico_responsable",
+          "fecha_apertura"
+        ],
+        "title": "EpisodioDetalle",
+        "description": "Detalle completo de un episodio con actos médicos."
+      },
+      "EpisodioListResponse": {
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "examples": [
+              5
+            ]
+          },
+          "episodios": {
+            "items": {
+              "$ref": "#/components/schemas/EpisodioResumen"
+            },
+            "type": "array",
+            "title": "Episodios"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "total",
+          "episodios"
+        ],
+        "title": "EpisodioListResponse",
+        "description": "Lista de episodios de un paciente."
+      },
+      "EpisodioResumen": {
+        "properties": {
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio",
+            "examples": [
+              700
+            ]
+          },
+          "tipo": {
+            "$ref": "#/components/schemas/TipoEpisodio",
+            "examples": [
+              "internacion"
+            ]
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoEpisodio",
+            "examples": [
+              "closed"
+            ]
+          },
+          "id_sede": {
+            "type": "integer",
+            "title": "Id Sede",
+            "examples": [
+              3
+            ]
+          },
+          "fecha_apertura": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Apertura",
+            "examples": [
+              "2025-03-10T09:00:00Z"
+            ]
+          },
+          "fecha_cierre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Cierre",
+            "examples": [
+              "2025-03-15T11:00:00Z"
+            ]
+          },
+          "id_medico_responsable": {
+            "type": "integer",
+            "title": "Id Medico Responsable",
+            "examples": [
+              42
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_episodio",
+          "tipo",
+          "estado",
+          "id_sede",
+          "fecha_apertura",
+          "id_medico_responsable"
+        ],
+        "title": "EpisodioResumen",
+        "description": "Resumen de un episodio para listados."
+      },
+      "EpisodioUpdate": {
+        "properties": {
+          "tipo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TipoEpisodio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "estado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EstadoEpisodio"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id_sede": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Sede"
+          },
+          "id_medico_responsable": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Medico Responsable"
+          },
+          "diagnostico_principal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Diagnostico Principal"
+          },
+          "fecha_cierre": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Cierre"
+          }
+        },
+        "type": "object",
+        "title": "EpisodioUpdate",
+        "description": "Payload para actualizar un episodio médico (ej. cerrar o cambiar médico)."
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "title": "Error",
+            "examples": [
+              "NOT_FOUND"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "examples": [
+              "El recurso solicitado no fue encontrado."
+            ]
+          },
+          "timestamp": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "message"
+        ],
+        "title": "ErrorResponse",
+        "description": "Respuesta estándar de error del módulo HCE."
+      },
+      "EstadoAlerta": {
+        "type": "string",
+        "enum": [
+          "Activa",
+          "Resuelta"
+        ],
+        "title": "EstadoAlerta",
+        "description": "Estado del ciclo de vida de la alerta."
+      },
+      "EstadoEpisodio": {
+        "type": "string",
+        "enum": [
+          "open",
+          "closed"
+        ],
+        "title": "EstadoEpisodio"
+      },
+      "EstadoReceta": {
+        "type": "string",
+        "enum": [
+          "Activa",
+          "Suspendida",
+          "Dispensada"
+        ],
+        "title": "EstadoReceta"
+      },
+      "EvolucionCreate": {
+        "properties": {
+          "contenido": {
+            "type": "string",
+            "title": "Contenido",
+            "description": "Texto libre con la nota clínica del profesional.",
+            "examples": [
+              "Paciente refiere mejoría del cuadro respiratorio. Se auscultan campos pulmonares limpios. Se indica continuar tratamiento."
+            ]
+          },
+          "fecha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha",
+            "description": "Fecha/hora de la evolución. Si no se envía, se usa la fecha/hora actual."
+          }
+        },
+        "type": "object",
+        "required": [
+          "contenido"
+        ],
+        "title": "EvolucionCreate",
+        "description": "Body para registrar una nueva evolución médica en un episodio."
+      },
+      "EvolucionListResponse": {
+        "properties": {
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "evoluciones": {
+            "items": {
+              "$ref": "#/components/schemas/EvolucionSchema"
+            },
+            "type": "array",
+            "title": "Evoluciones"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_episodio",
+          "total",
+          "evoluciones"
+        ],
+        "title": "EvolucionListResponse",
+        "description": "Respuesta de listado de evoluciones de un episodio."
+      },
+      "EvolucionSchema": {
+        "properties": {
+          "id_evolucion": {
+            "type": "integer",
+            "title": "Id Evolucion"
+          },
+          "id_episodio": {
+            "type": "integer",
+            "title": "Id Episodio"
+          },
+          "id_profesional": {
+            "type": "integer",
+            "title": "Id Profesional"
+          },
+          "contenido": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenido"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_evolucion",
+          "id_episodio",
+          "id_profesional",
+          "fecha"
+        ],
+        "title": "EvolucionSchema",
+        "description": "Schema de respuesta completo de una evolución médica."
+      },
+      "EvolucionUpdate": {
+        "properties": {
+          "contenido": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contenido",
+            "description": "Texto libre con la nota clínica corregida."
+          }
+        },
+        "type": "object",
+        "title": "EvolucionUpdate",
+        "description": "Body para actualizar parcialmente una evolución médica (PATCH)."
+      },
+      "FichaMedicaCreate": {
+        "properties": {
+          "grupo_sanguineo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grupo Sanguineo",
+            "description": "Grupo sanguíneo y factor Rh del paciente.",
+            "examples": [
+              "A+"
+            ]
+          },
+          "peso_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peso Kg",
+            "description": "Peso del paciente en kilogramos.",
+            "examples": [
+              72.5
+            ]
+          },
+          "altura_cm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Altura Cm",
+            "description": "Altura del paciente en centímetros.",
+            "examples": [
+              175.0
+            ]
+          },
+          "observaciones_generales": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones Generales",
+            "description": "Notas generales y antecedentes del paciente visibles en la cabecera de la ficha.",
+            "examples": [
+              "Paciente con antecedentes de hipertensión arterial. Diabético tipo 2."
+            ]
+          }
+        },
+        "type": "object",
+        "title": "FichaMedicaCreate",
+        "description": "Payload para crear/registrar la ficha médica de un paciente."
+      },
+      "FichaMedicaSchema": {
+        "properties": {
+          "grupo_sanguineo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grupo Sanguineo",
+            "description": "Grupo sanguíneo y factor Rh del paciente.",
+            "examples": [
+              "A+"
+            ]
+          },
+          "peso_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peso Kg",
+            "description": "Peso del paciente en kilogramos.",
+            "examples": [
+              72.5
+            ]
+          },
+          "altura_cm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Altura Cm",
+            "description": "Altura del paciente en centímetros.",
+            "examples": [
+              175.0
+            ]
+          },
+          "observaciones_generales": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones Generales",
+            "description": "Notas generales y antecedentes del paciente visibles en la cabecera de la ficha.",
+            "examples": [
+              "Paciente con antecedentes de hipertensión arterial. Diabético tipo 2."
+            ]
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_paciente"
+        ],
+        "title": "FichaMedicaSchema",
+        "description": "Schema de respuesta completo de la ficha médica."
+      },
+      "FichaMedicaUpdate": {
+        "properties": {
+          "grupo_sanguineo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Grupo Sanguineo",
+            "description": "Grupo sanguíneo y factor Rh del paciente.",
+            "examples": [
+              "A+"
+            ]
+          },
+          "peso_kg": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peso Kg",
+            "description": "Peso del paciente en kilogramos.",
+            "examples": [
+              72.5
+            ]
+          },
+          "altura_cm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Altura Cm",
+            "description": "Altura del paciente en centímetros.",
+            "examples": [
+              175.0
+            ]
+          },
+          "observaciones_generales": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observaciones Generales",
+            "description": "Notas generales y antecedentes del paciente visibles en la cabecera de la ficha.",
+            "examples": [
+              "Paciente con antecedentes de hipertensión arterial. Diabético tipo 2."
+            ]
+          }
+        },
+        "type": "object",
+        "title": "FichaMedicaUpdate",
+        "description": "Payload para actualizar parcialmente la ficha médica. Todos los campos son opcionales."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "examples": [
+              "UP"
+            ]
+          },
+          "module": {
+            "type": "string",
+            "title": "Module",
+            "examples": [
+              "hce"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "module",
+          "timestamp"
+        ],
+        "title": "HealthResponse",
+        "description": "Respuesta del health check."
+      },
+      "IngresoInternacionRequest": {
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "sector": {
+            "type": "string",
+            "title": "Sector",
+            "examples": [
+              "UTI"
+            ]
+          },
+          "habitacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Habitacion",
+            "examples": [
+              "Terapia A"
+            ]
+          },
+          "cama": {
+            "type": "string",
+            "title": "Cama",
+            "examples": [
+              "Cama 4"
+            ]
+          },
+          "fecha_ingreso": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Ingreso",
+            "examples": [
+              "2026-04-17T14:30:00Z"
+            ]
+          },
+          "medico_solicitante": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Medico Solicitante",
+            "examples": [
+              "Dr. Pérez"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "sector",
+          "cama",
+          "fecha_ingreso"
+        ],
+        "title": "IngresoInternacionRequest",
+        "description": "Payload enviado por M6 para notificar ingreso de paciente a cama."
+      },
+      "IngresoInternacionResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "success",
+            "examples": [
+              "success"
+            ]
+          },
+          "mensaje": {
+            "type": "string",
+            "title": "Mensaje",
+            "default": "Episodio creado y cama asignada correctamente.",
+            "examples": [
+              "Episodio creado y cama asignada correctamente."
+            ]
+          },
+          "data": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data",
+            "examples": [
+              {
+                "id_episodio": 700,
+                "id_movimiento": 1
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "title": "IngresoInternacionResponse",
+        "description": "Respuesta tras crear episodio de internación."
+      },
+      "InsuranceResponse": {
+        "properties": {
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "id_obra_social": {
+            "type": "integer",
+            "title": "Id Obra Social",
+            "examples": [
+              15
+            ]
+          },
+          "nombre_obra_social": {
+            "type": "string",
+            "title": "Nombre Obra Social",
+            "examples": [
+              "OSDE"
+            ]
+          },
+          "codigo_plan": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Plan",
+            "examples": [
+              "OSDE-210"
+            ]
+          },
+          "numero_afiliado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Numero Afiliado",
+            "examples": [
+              "1234567890"
+            ]
+          },
+          "vigente_desde": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vigente Desde",
+            "examples": [
+              "2024-01-01"
+            ]
+          },
+          "vigente_hasta": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vigente Hasta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "id_obra_social",
+          "nombre_obra_social"
+        ],
+        "title": "InsuranceResponse",
+        "description": "Cobertura médica vigente del paciente."
+      },
+      "ItemRecetaCreate": {
+        "properties": {
+          "medicamento": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Medicamento",
+            "examples": [
+              "Amoxicilina 500mg"
+            ]
+          },
+          "indicaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indicaciones",
+            "examples": [
+              "Tomar 1 comprimido cada 8 horas por 7 días."
+            ]
+          },
+          "cantidad": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Cantidad",
+            "default": 1,
+            "examples": [
+              1
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "medicamento"
+        ],
+        "title": "ItemRecetaCreate",
+        "description": "Schema para crear un ítem de receta."
+      },
+      "ItemRecetaSchema": {
+        "properties": {
+          "medicamento": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Medicamento",
+            "examples": [
+              "Amoxicilina 500mg"
+            ]
+          },
+          "indicaciones": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indicaciones",
+            "examples": [
+              "Tomar 1 comprimido cada 8 horas por 7 días."
+            ]
+          },
+          "cantidad": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Cantidad",
+            "default": 1,
+            "examples": [
+              1
+            ]
+          },
+          "id_item": {
+            "type": "integer",
+            "title": "Id Item",
+            "examples": [
+              1
+            ]
+          },
+          "id_receta": {
+            "type": "integer",
+            "title": "Id Receta",
+            "examples": [
+              8502
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "medicamento",
+          "id_item",
+          "id_receta"
+        ],
+        "title": "ItemRecetaSchema",
+        "description": "Schema para leer un ítem de receta."
+      },
+      "OrdenListResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "success",
+            "examples": [
+              "success"
+            ]
+          },
+          "cantidad": {
+            "type": "integer",
+            "title": "Cantidad",
+            "examples": [
+              1
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/OrdenMedicaCompleta"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cantidad",
+          "data"
+        ],
+        "title": "OrdenListResponse",
+        "description": "Respuesta de listado de órdenes."
+      },
+      "OrdenMedicaCompleta": {
+        "properties": {
+          "id_orden": {
+            "type": "integer",
+            "title": "Id Orden",
+            "examples": [
+              4050
+            ]
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "tipo_estudio": {
+            "$ref": "#/components/schemas/TipoEstudio",
+            "examples": [
+              "Imagen"
+            ]
+          },
+          "descripcion_pedido": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion Pedido",
+            "examples": [
+              "Resonancia Magnética de Cerebro"
+            ]
+          },
+          "prioridad": {
+            "$ref": "#/components/schemas/PrioridadOrden",
+            "examples": [
+              "Urgente"
+            ]
+          },
+          "alertas_clinicas": {
+            "items": {
+              "$ref": "#/components/schemas/AlertaSmartPayload"
+            },
+            "type": "array",
+            "title": "Alertas Clinicas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_orden",
+          "id_paciente",
+          "tipo_estudio",
+          "prioridad"
+        ],
+        "title": "OrdenMedicaCompleta",
+        "description": "Orden médica con Smart Payload de alertas clínicas activas."
+      },
+      "PermissionChangeNotification": {
+        "properties": {
+          "id_usuario_afectado": {
+            "type": "integer",
+            "title": "Id Usuario Afectado",
+            "examples": [
+              42
+            ]
+          },
+          "tipo_cambio": {
+            "$ref": "#/components/schemas/TipoCambioPermiso",
+            "examples": [
+              "revoke-access"
+            ]
+          },
+          "recurso_afectado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurso Afectado",
+            "examples": [
+              "hce:write"
+            ]
+          },
+          "motivo": {
+            "type": "string",
+            "title": "Motivo",
+            "examples": [
+              "Profesional suspendido por auditoría interna."
+            ]
+          },
+          "id_usuario_notificador": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Usuario Notificador",
+            "examples": [
+              10
+            ]
+          },
+          "fecha_ocurrencia": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Ocurrencia"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_usuario_afectado",
+          "tipo_cambio",
+          "motivo"
+        ],
+        "title": "PermissionChangeNotification",
+        "description": "Payload que HCE envía a Core para notificar cambio de permisos."
+      },
+      "PermissionChangeResponse": {
+        "properties": {
+          "acknowledged": {
+            "type": "boolean",
+            "title": "Acknowledged",
+            "examples": [
+              true
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "acknowledged"
+        ],
+        "title": "PermissionChangeResponse",
+        "description": "Respuesta de Core tras recibir la notificación."
+      },
+      "PrioridadOrden": {
+        "type": "string",
+        "enum": [
+          "Normal",
+          "Urgente",
+          "Emergencia"
+        ],
+        "title": "PrioridadOrden"
+      },
+      "RecetaCreate": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemRecetaCreate"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "RecetaCreate",
+        "description": "Payload para que un médico cree una receta completa con múltiples medicamentos."
+      },
+      "RecetaListResponse": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total",
+            "examples": [
+              15
+            ]
+          },
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/RecetaMedicaDetallada"
+            },
+            "type": "array",
+            "title": "Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "data"
+        ],
+        "title": "RecetaListResponse",
+        "description": "Respuesta paginada de recetas."
+      },
+      "RecetaMedicaDetallada": {
+        "properties": {
+          "id_receta": {
+            "type": "integer",
+            "title": "Id Receta",
+            "examples": [
+              8502
+            ]
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "id_evolucion": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Evolucion",
+            "examples": [
+              302
+            ]
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoReceta",
+            "examples": [
+              "Activa"
+            ]
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ItemRecetaSchema"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "alertas_clinicas": {
+            "items": {
+              "$ref": "#/components/schemas/AlertaSmartPayload"
+            },
+            "type": "array",
+            "title": "Alertas Clinicas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_receta",
+          "id_paciente",
+          "estado"
+        ],
+        "title": "RecetaMedicaDetallada",
+        "description": "Receta electrónica con Smart Payload de alertas clínicas activas del paciente."
+      },
+      "ResultadoCreatedResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "success",
+            "examples": [
+              "success"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "title": "Message",
+            "default": "Resultado vinculado correctamente a la Historia Clínica.",
+            "examples": [
+              "Resultado vinculado correctamente a la Historia Clínica."
+            ]
+          }
+        },
+        "type": "object",
+        "title": "ResultadoCreatedResponse",
+        "description": "Respuesta tras registrar un resultado."
+      },
+      "ResultadoEstudioRequest": {
+        "properties": {
+          "id_orden": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Orden",
+            "examples": [
+              4050
+            ]
+          },
+          "id_paciente": {
+            "type": "integer",
+            "title": "Id Paciente",
+            "examples": [
+              10500
+            ]
+          },
+          "tipo_estudio": {
+            "$ref": "#/components/schemas/TipoEstudio",
+            "examples": [
+              "Imagen"
+            ]
+          },
+          "id_profesional_firmante": {
+            "type": "string",
+            "title": "Id Profesional Firmante",
+            "examples": [
+              "Dra. Gomez (Radiología)"
+            ]
+          },
+          "fecha_resultado": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Resultado",
+            "examples": [
+              "2026-04-17T11:00:00Z"
+            ]
+          },
+          "informe_resumen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Informe Resumen",
+            "examples": [
+              "RM de Cerebro: Sin hallazgos patológicos."
+            ]
+          },
+          "id_externo_estudio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Id Externo Estudio",
+            "examples": [
+              "550e8400-e29b-41d4-a716-446655440000"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_paciente",
+          "tipo_estudio",
+          "id_profesional_firmante",
+          "fecha_resultado"
+        ],
+        "title": "ResultadoEstudioRequest",
+        "description": "Payload enviado por M4/M5 para registrar un resultado en la HCE."
+      },
+      "ResultadoEstudioResumen": {
+        "properties": {
+          "id_resultado": {
+            "type": "integer",
+            "title": "Id Resultado",
+            "examples": [
+              9021
+            ]
+          },
+          "tipo_estudio": {
+            "type": "string",
+            "title": "Tipo Estudio",
+            "examples": [
+              "Laboratorio"
+            ]
+          },
+          "fecha_resultado": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha Resultado",
+            "examples": [
+              "2026-04-20T10:00:00Z"
+            ]
+          },
+          "titulo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Titulo",
+            "examples": [
+              "Hemograma Completo"
+            ]
+          },
+          "resumen": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resumen",
+            "examples": [
+              "Valores dentro de los rangos normales. Sin observaciones."
+            ]
+          },
+          "profesional_firmante": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profesional Firmante",
+            "examples": [
+              "Dr. Bioq. Fernandez"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id_resultado",
+          "tipo_estudio",
+          "fecha_resultado"
+        ],
+        "title": "ResultadoEstudioResumen",
+        "description": "Resumen de resultado para el Portal del Paciente (M8)."
+      },
+      "SeveridadAlerta": {
+        "type": "string",
+        "enum": [
+          "Leve",
+          "Moderada",
+          "Severa",
+          "Critica"
+        ],
+        "title": "SeveridadAlerta",
+        "description": "Nivel de severidad de la alerta."
+      },
+      "TipoActoMedico": {
+        "type": "string",
+        "enum": [
+          "consulta",
+          "estudio-laboratorio",
+          "estudio-imagen",
+          "procedimiento",
+          "cirugia",
+          "medicacion",
+          "descartable"
+        ],
+        "title": "TipoActoMedico"
+      },
+      "TipoAntecedente": {
+        "type": "string",
+        "enum": [
+          "Quirurgico",
+          "Familiar",
+          "Patologico",
+          "Habito"
+        ],
+        "title": "TipoAntecedente",
+        "description": "Tipo de antecedente clínico del paciente."
+      },
+      "TipoCambioPermiso": {
+        "type": "string",
+        "enum": [
+          "revoke-access",
+          "role-change",
+          "deactivate-user"
+        ],
+        "title": "TipoCambioPermiso"
+      },
+      "TipoConsideracion": {
+        "type": "string",
+        "enum": [
+          "Alergia",
+          "Dispositivo_Implantado",
+          "Condicion_Critica",
+          "Riesgo_Infeccioso",
+          "Contraindicacion"
+        ],
+        "title": "TipoConsideracion",
+        "description": "Tipo de consideración/alerta clínica del paciente."
+      },
+      "TipoEpisodio": {
+        "type": "string",
+        "enum": [
+          "consulta-externa",
+          "internacion",
+          "guardia",
+          "cirugia"
+        ],
+        "title": "TipoEpisodio"
+      },
+      "TipoEstudio": {
+        "type": "string",
+        "enum": [
+          "Laboratorio",
+          "Imagen",
+          "Anatomia_Patologica"
+        ],
+        "title": "TipoEstudio"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "JWT Bearer": {
+        "type": "http",
+        "description": "JWT emitido por Módulo 10 (Core). Header: Authorization: Bearer <token>",
+        "scheme": "bearer"
+      }
+    }
+  }
+}

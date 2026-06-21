@@ -33,7 +33,7 @@ class DevLoginRequest(BaseModel):
             "hce:ficha-medica:read", "hce:ficha-medica:write",
             "hce:recetas:read", "hce:recetas:write", "hce:ordenes:read",
             "hce:resultados:write", "hce:internacion:write",
-            "hce:episodes:read", "hce:medical-acts:read", "hce:insurance:read",
+            "hce:episodes:read", "hce:episodes:write", "hce:medical-acts:read", "hce:insurance:read",
             "hce:evoluciones:read", "hce:evoluciones:write"
         ]],
     )

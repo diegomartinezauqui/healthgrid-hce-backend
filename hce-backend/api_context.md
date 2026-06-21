@@ -225,9 +225,24 @@ FastAPI decodifica los tokens en la dependencia [app/auth/jwt_handler.py](file:/
 ### Sistema de Login de Desarrollo (Mock)
 Cuando `APP_ENV != production`, en el router [dev.py](file:///c:/Users/monti/Desktop/Desarrollo_de_apps_ii/healthgrid-hce-backend/hce-backend/app/routers/dev.py) se expone:
 * **`POST /api/v1/dev/login`**: Firma un token JWT simulado usando la misma clave secreta de producción.
-* Si el body se envía vacío, usa un usuario médico mock por defecto. También permite inyectar roles, un array de `permissions` customizados y un `sedeId` específico para testing.
+  * Si el body se envía vacío, usa un usuario médico mock por defecto con todos los permisos habilitados.
+  * **Payload de Ejemplo para Sala de Espera**: Para simular un usuario con los permisos específicos requeridos por la sala de espera (`hce:episodes:read` y `hce:episodes:write`), envía el siguiente body:
+    ```json
+    {
+      "sub": 42,
+      "username": "dr.dev",
+      "role": "medico",
+      "sede_id": 3,
+      "permissions": [
+        "hce:episodes:read",
+        "hce:episodes:write"
+      ],
+      "expire_hours": 24
+    }
+    ```
 
 ---
+
 
 ## 5. Endpoints, Permisos y Payloads de Consulta/Registro
 
