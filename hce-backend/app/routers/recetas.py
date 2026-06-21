@@ -178,3 +178,52 @@ async def registrar_receta(
             detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
         )
 
+
+@router.patch(
+    "/recetas/{id_receta}/dispensar",
+    response_model=RecetaMedicaDetallada,
+    summary="Marcar receta como dispensada",
+    description=(
+        "Permite al Módulo 3 (Farmacia) cambiar el estado de una receta a 'Dispensada'."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def dispensar_receta(
+    id_receta: int,
+    db: DbSession,
+    _user=Depends(require_permission("hce:recetas:write")),
+):
+    try:
+        receta = await receta_service.dispensar_receta(db, id_receta)
+        if not receta:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail={"error": "NOT_FOUND", "message": "La receta no existe o no fue encontrada."},
+            )
+
+        alertas = await receta_service.get_alertas_farmacologicas_paciente(
+            db, receta.id_paciente
+        )
+
+        return RecetaMedicaDetallada(
+            id_receta=receta.id_receta,
+            id_paciente=receta.id_paciente,
+            id_evolucion=receta.id_evolucion,
+            estado=receta.estado,
+            items=receta.items,
+            alertas_clinicas=[
+                AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
+                for a in alertas
+            ],
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"error": "UNPROCESSABLE_ENTITY", "message": str(e)},
+        )
+
+

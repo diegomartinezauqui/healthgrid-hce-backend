@@ -93,3 +93,21 @@ async def registrar_receta(
 
     return await receta_repo.get_receta_detallada(db, nueva_receta.id_receta)
 
+
+async def dispensar_receta(db: AsyncSession, id_receta: int) -> Optional[Receta]:
+    """Busca una receta por ID, cambia su estado a DISPENSADA, realiza commit y la retorna."""
+    receta = await receta_repo.get_receta_detallada(db, id_receta)
+    if not receta:
+        return None
+
+    if receta.estado != EstadoReceta.ACTIVA:
+        raise ValueError(
+            f"No se puede dispensar una receta con estado '{receta.estado}'. Debe estar '{EstadoReceta.ACTIVA.value}'."
+        )
+
+    await receta_repo.actualizar_estado(db, receta, EstadoReceta.DISPENSADA)
+    await db.commit()
+    await db.refresh(receta)
+    return receta
+
+

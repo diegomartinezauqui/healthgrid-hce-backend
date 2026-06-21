@@ -46,5 +46,14 @@ class RecetaRepository(BaseRepository[Receta, RecetaCreate]):
         result = await db.execute(query)
         return list(result.scalars().all())
 
+    async def actualizar_estado(
+        self, db: AsyncSession, receta: Receta, estado: str
+    ) -> Receta:
+        """Actualiza el estado de una receta."""
+        receta.estado = estado
+        db.add(receta)
+        await db.flush()
+        return receta
+
 
 receta_repo = RecetaRepository()

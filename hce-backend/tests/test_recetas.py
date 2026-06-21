@@ -97,3 +97,30 @@ async def test_crear_receta_master_detail(client: AsyncClient, db: AsyncSession,
     receta_farmacia = next((r for r in recetas_list if r["id_receta"] == id_receta), None)
     assert receta_farmacia is not None
     assert len(receta_farmacia["items"]) == 2
+
+    # 5. Dispensar la receta a través del endpoint PATCH /recetas/{id_receta}/dispensar
+    res_dispensar = await client.patch(
+        f"/api/v1/recetas/{id_receta}/dispensar",
+        headers=auth_headers
+    )
+    assert res_dispensar.status_code == 200
+    data_dispensada = res_dispensar.json()
+    assert data_dispensada["estado"] == "Dispensada"
+
+    # 6. Validar que al hacer un GET individual o listado el estado persistido sea "Dispensada"
+    res_get_single = await client.get(
+        f"/api/v1/recetas/{id_receta}",
+        headers=auth_headers
+    )
+    assert res_get_single.status_code == 200
+    assert res_get_single.json()["estado"] == "Dispensada"
+
+    # 7. Intentar dispensar la receta de nuevo (ahora que ya está "Dispensada", estado no es "Activa")
+    res_dispensar_again = await client.patch(
+        f"/api/v1/recetas/{id_receta}/dispensar",
+        headers=auth_headers
+    )
+    assert res_dispensar_again.status_code == 422
+    assert res_dispensar_again.json()["detail"]["error"] == "UNPROCESSABLE_ENTITY"
+
+
