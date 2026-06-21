@@ -1,8 +1,9 @@
-"""Schemas de ficha médica — datos clínicos permanentes del paciente."""
-
-from typing import Optional
+from typing import List, Optional
 
 from pydantic import BaseModel, Field
+
+from app.schemas.alerta import AlertaCreate, AlertaSchema
+from app.schemas.antecedente import AntecedenteCreate, AntecedenteSchema
 
 
 class FichaMedicaBase(BaseModel):
@@ -50,3 +51,19 @@ class FichaMedicaSchema(FichaMedicaBase):
     id_paciente: int = Field(..., examples=[10500])
 
     model_config = {"from_attributes": True}
+
+
+class FichaMedicaCompletaCreate(BaseModel):
+    """Payload para registrar de forma atómica la ficha médica, antecedentes y alertas de un paciente."""
+
+    ficha_medica: FichaMedicaCreate
+    antecedentes: List[AntecedenteCreate] = Field(default_factory=list)
+    alertas_clinicas: List[AlertaCreate] = Field(default_factory=list)
+
+
+class FichaMedicaCompletaResponse(BaseModel):
+    """Schema de respuesta completo para la ficha médica consolidada con sus antecedentes y alertas."""
+
+    ficha_medica: FichaMedicaSchema
+    antecedentes: List[AntecedenteSchema] = Field(default_factory=list)
+    alertas_clinicas: List[AlertaSchema] = Field(default_factory=list)
