@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, func
+from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -31,6 +31,7 @@ class SalaEspera(Base):
         nullable=False,
     )
     consultorio: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    motivo: Mapped[str | None] = mapped_column(String(500), default="-", server_default="-", nullable=True)
 
     # ─── Relaciones ───────────────────────────────────────────────
     paciente = relationship("Paciente", back_populates="sala_espera_registros")

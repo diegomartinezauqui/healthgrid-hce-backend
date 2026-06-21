@@ -23,6 +23,14 @@ class SalaEsperaCreate(BaseModel):
     fecha_llegada: Optional[datetime] = Field(None, examples=["2026-06-21T09:45:00Z"])
 
 
+class SalaEsperaPrioridad(BaseModel):
+    """Body para actualizar la prioridad de un paciente en sala de espera (Triage)."""
+
+    prioridad: int = Field(..., ge=1, le=5, description="Nivel de prioridad/urgencia asignado (1-5)", examples=[3])
+    motivo: Optional[str] = Field(None, description="Motivo de la consulta (opcional)", examples=["Control post-operatorio"])
+
+
+
 
 
 class SalaEsperaAtender(BaseModel):
@@ -58,5 +66,6 @@ class SalaEsperaSchema(BaseModel):
     prioridad: int
     estado: EstadoSalaEspera
     consultorio: Optional[int] = None
+    motivo: str
 
     model_config = {"from_attributes": True}

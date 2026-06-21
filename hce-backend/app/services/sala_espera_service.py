@@ -57,6 +57,7 @@ async def ingresar_paciente(
         prioridad=1,
         estado=EstadoSalaEspera.ESPERANDO,
         consultorio=None,
+        motivo="-",
     )
     
     await sala_espera_repo.save(db, nueva_espera)
@@ -138,3 +139,22 @@ async def marcar_ausente(
     
     await db.flush()
     return registro
+
+
+async def actualizar_prioridad(
+    db: AsyncSession,
+    id_espera: int,
+    prioridad: int,
+    motivo: Optional[str] = None,
+) -> Optional[SalaEspera]:
+    """Actualiza el nivel de prioridad de urgencia del paciente (Triage)."""
+    registro = await sala_espera_repo.get(db, id_espera)
+    if not registro:
+        return None
+
+    registro.prioridad = prioridad
+    if motivo is not None:
+        registro.motivo = motivo
+    await db.flush()
+    return registro
+

@@ -51,6 +51,8 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     assert data_1["consultorio"] is None
     id_espera_1 = data_1["id_espera"]
     assert data_1["id_episodio"] is None
+    assert data_1["motivo"] == "-"
+
 
     # Verificar que NO se haya creado un episodio automático para Paciente Uno al ingresar
     result_ep_1 = await db.execute(
@@ -76,13 +78,27 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     id_espera_2 = data_2["id_espera"]
     assert data_2["id_episodio"] is None
 
-    # Modificar directamente la prioridad del Paciente Dos a 3 en la base de datos para simular triage
-    result_espera_2 = await db.execute(
-        select(SalaEspera).where(SalaEspera.id_espera == id_espera_2)
+    # Llamar al nuevo endpoint de prioridad para simular triage asignando prioridad = 3
+    # No enviamos motivo, por lo que debería mantener el motivo por defecto "-"
+    res_prioridad = await client.patch(
+        f"/api/v1/sala-espera/{id_espera_2}/prioridad",
+        json={"prioridad": 3},
+        headers=auth_headers
     )
-    espera_2_db = result_espera_2.scalar_one()
-    espera_2_db.prioridad = 3
-    await db.commit()
+    assert res_prioridad.status_code == 200
+    assert res_prioridad.json()["prioridad"] == 3
+    assert res_prioridad.json()["motivo"] == "-"
+
+    # Actualizar prioridad nuevamente, esta vez enviando también un motivo de consulta
+    res_prioridad_motivo = await client.patch(
+        f"/api/v1/sala-espera/{id_espera_2}/prioridad",
+        json={"prioridad": 4, "motivo": "Dolor fuerte de cabeza"},
+        headers=auth_headers
+    )
+    assert res_prioridad_motivo.status_code == 200
+    assert res_prioridad_motivo.json()["prioridad"] == 4
+    assert res_prioridad_motivo.json()["motivo"] == "Dolor fuerte de cabeza"
+
 
 
     # 3. Consultar listado ordenado por prioridad (el Paciente Dos con prioridad 3 debería salir primero)
@@ -176,6 +192,8 @@ async def test_presentismo_kafka_integration(client: AsyncClient, db: AsyncSessi
     assert registro_kafka is not None
     assert registro_kafka["estado"] == "Esperando"
     assert registro_kafka["id_turno_m2"] == 99001
+    assert registro_kafka["motivo"] == "-"
+
 
 
 @pytest.mark.asyncio
@@ -207,6 +225,7 @@ async def test_presentismo_webhook_integration(client: AsyncClient, db: AsyncSes
     assert data["id_medico"] == 42
     assert data["id_turno_m2"] == 77001
     assert data["id_episodio"] is None
+    assert data["motivo"] == "-"
     assert "2026-06-21T09:45:00" in data["fecha_llegada"]
 
 

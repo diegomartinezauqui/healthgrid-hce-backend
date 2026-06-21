@@ -14,6 +14,7 @@ from app.schemas.sala_espera import (
     SalaEsperaLlamar,
     SalaEsperaSchema,
     SalaEsperaAtender,
+    SalaEsperaPrioridad,
 )
 from app.services import sala_espera_service
 
@@ -162,3 +163,30 @@ async def marcar_ausente(
             detail={"error": "NOT_FOUND", "message": "No se encontró el registro de sala de espera solicitado."},
         )
     return registro
+
+
+@router.patch(
+    "/sala-espera/{id_espera}/prioridad",
+    response_model=SalaEsperaSchema,
+    summary="Actualizar prioridad del paciente (Triage)",
+    description="Permite a los módulos de Triage/M9 o enfermería reclasificar la prioridad del paciente en la sala de espera.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse, "description": "Registro no encontrado."},
+    },
+)
+async def actualizar_prioridad(
+    id_espera: int,
+    body: SalaEsperaPrioridad,
+    db: DbSession,
+    _user=Depends(require_permission("hce:episodes:write")),
+):
+    registro = await sala_espera_service.actualizar_prioridad(db, id_espera, body.prioridad, body.motivo)
+    if not registro:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "No se encontró el registro de sala de espera solicitado."},
+        )
+    return registro
+

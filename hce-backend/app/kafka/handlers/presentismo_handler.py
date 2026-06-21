@@ -42,8 +42,7 @@ async def handle_presentismo(data: dict):
             id_medico=id_medico,
             id_sede=id_sede,
             id_turno_m2=evento.id_turno_m2,
-            fecha_turno=evento.fecha_hora_llegada,
-            prioridad=1,
+            fecha_llegada=evento.fecha_hora_llegada,
         )
 
         async with async_session() as db:
