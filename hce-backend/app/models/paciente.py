@@ -30,3 +30,4 @@ class Paciente(Base):
     antecedentes = relationship("AntecedentePaciente", back_populates="paciente", lazy="selectin")
     coberturas = relationship("CoberturaMedica", back_populates="paciente", lazy="selectin")
     ficha_medica = relationship("FichaMedica", back_populates="paciente", uselist=False, lazy="selectin")
+    sala_espera_registros = relationship("SalaEspera", back_populates="paciente", lazy="selectin")

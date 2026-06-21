@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from app.database import Base
 from app.dependencies import get_db
-from app.main import app
+from app.main import app as fastapi_app
 
 # ─── Engine de test (SQLite async) ────────────────────────────────
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
@@ -51,7 +51,12 @@ async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 # Sobrescribir la dependency de BD
-app.dependency_overrides[get_db] = override_get_db
+fastapi_app.dependency_overrides[get_db] = override_get_db
+
+# Sobrescribir el sessionmaker global para que los handlers de Kafka usen la BD de test
+import app.database
+app.database.async_session = test_session
+
 
 
 @pytest_asyncio.fixture
@@ -64,6 +69,6 @@ async def db() -> AsyncGenerator[AsyncSession, None]:
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
     """Cliente HTTP para tests."""
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=fastapi_app)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac

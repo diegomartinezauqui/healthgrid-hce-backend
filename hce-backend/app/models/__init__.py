@@ -16,6 +16,7 @@ from app.models.orden import Orden
 from app.models.paciente import Paciente
 from app.models.receta import Receta
 from app.models.resultado import Resultado
+from app.models.sala_espera import SalaEspera
 
 __all__ = [
     "Paciente",
@@ -31,4 +32,5 @@ __all__ = [
     "Orden",
     "Resultado",
     "CoberturaMedica",
+    "SalaEspera",
 ]
