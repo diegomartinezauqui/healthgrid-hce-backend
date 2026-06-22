@@ -6,3 +6,4 @@ class EstadoSalaEspera(str, Enum):
     LLAMADO = "Llamado"
     ATENDIDO = "Atendido"
     AUSENTE = "Ausente"
+    FINALIZADO = "Finalizado"

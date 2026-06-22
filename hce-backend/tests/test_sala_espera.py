@@ -155,6 +155,14 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     assert episodio_2.tipo == "consulta-externa"
     assert episodio_2.id_episodio == data_atendido["id_episodio"]
 
+    # 6.5 Finalizar atención a Paciente Dos
+    res_finalizar = await client.patch(
+        f"/api/v1/sala-espera/{id_espera_2}/finalizar",
+        headers=auth_headers
+    )
+    assert res_finalizar.status_code == 200
+    assert res_finalizar.json()["estado"] == "Finalizado"
+
     # 7. Marcar Ausente a Paciente Uno
     res_ausente = await client.patch(
         f"/api/v1/sala-espera/{id_espera_1}/ausente",

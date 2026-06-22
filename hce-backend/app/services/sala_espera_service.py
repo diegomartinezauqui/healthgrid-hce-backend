@@ -158,3 +158,17 @@ async def actualizar_prioridad(
     await db.flush()
     return registro
 
+
+async def finalizar_paciente(
+    db: AsyncSession,
+    id_espera: int,
+) -> Optional[SalaEspera]:
+    """Cambia el estado del registro a Finalizado cuando concluye la atención."""
+    registro = await sala_espera_repo.get(db, id_espera)
+    if not registro:
+        return None
+
+    registro.estado = EstadoSalaEspera.FINALIZADO
+    await db.flush()
+    return registro
+

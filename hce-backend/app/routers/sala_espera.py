@@ -190,3 +190,28 @@ async def actualizar_prioridad(
         )
     return registro
 
+
+@router.patch(
+    "/sala-espera/{id_espera}/finalizar",
+    response_model=SalaEsperaSchema,
+    summary="Marcar turno como finalizado",
+    description="Cambia el estado del paciente a 'Finalizado' al concluir la atención médica.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse, "description": "Registro no encontrado."},
+    },
+)
+async def finalizar_paciente(
+    id_espera: int,
+    db: DbSession,
+    _user=Depends(require_permission("hce:episodes:write")),
+):
+    registro = await sala_espera_service.finalizar_paciente(db, id_espera)
+    if not registro:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "No se encontró el registro de sala de espera solicitado."},
+        )
+    return registro
+
