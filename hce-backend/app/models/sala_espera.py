@@ -34,5 +34,5 @@ class SalaEspera(Base):
     motivo: Mapped[str | None] = mapped_column(String(500), default="-", server_default="-", nullable=True)
 
     # ─── Relaciones ───────────────────────────────────────────────
-    paciente = relationship("Paciente", back_populates="sala_espera_registros")
+    paciente = relationship("Paciente", back_populates="sala_espera_registros", lazy="selectin")
     episodio = relationship("Episodio")

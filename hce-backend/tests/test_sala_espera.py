@@ -52,6 +52,9 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     id_espera_1 = data_1["id_espera"]
     assert data_1["id_episodio"] is None
     assert data_1["motivo"] == "-"
+    assert data_1["paciente"] is not None
+    assert data_1["paciente"]["id_paciente"] == 3001
+    assert data_1["paciente"]["datos_personales"]["nombre"] == "Paciente Uno"
 
 
     # Verificar que NO se haya creado un episodio automático para Paciente Uno al ingresar
@@ -227,6 +230,9 @@ async def test_presentismo_webhook_integration(client: AsyncClient, db: AsyncSes
     assert data["id_episodio"] is None
     assert data["motivo"] == "-"
     assert "2026-06-21T09:45:00" in data["fecha_llegada"]
+    assert data["paciente"] is not None
+    assert data["paciente"]["id_paciente"] == id_paciente
+    assert data["paciente"]["datos_personales"]["nombre"] == "Paciente Webhook"
 
 
 @pytest.mark.asyncio
@@ -310,5 +316,28 @@ async def test_atender_con_episodio_existente(client: AsyncClient, db: AsyncSess
     data_atendido = res_atender_ok.json()
     assert data_atendido["estado"] == "Atendido"
     assert data_atendido["id_episodio"] == episodio_existente.id_episodio
+
+
+@pytest.mark.asyncio
+async def test_paciente_endpoints(client: AsyncClient, db: AsyncSession, auth_headers: dict):
+    # 0. Crear paciente
+    p = Paciente(id_paciente=3050, datos_personales={"nombre": "Paciente Cache Test"})
+    db.add(p)
+    await db.commit()
+
+    # 1. Consultar paciente por ID
+    res = await client.get("/api/v1/pacientes/3050", headers=auth_headers)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["id_paciente"] == 3050
+    assert data["datos_personales"]["nombre"] == "Paciente Cache Test"
+
+    # 2. Consultar listado de pacientes
+    res_list = await client.get("/api/v1/pacientes?limit=10", headers=auth_headers)
+    assert res_list.status_code == 200
+    data_list = res_list.json()
+    assert len(data_list) >= 1
+    assert any(x["id_paciente"] == 3050 for x in data_list)
+
 
 

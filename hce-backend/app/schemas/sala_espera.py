@@ -6,6 +6,7 @@ from typing import Optional
 from pydantic import AliasChoices, BaseModel, Field
 
 from common.enums.enums_sala_espera import EstadoSalaEspera
+from app.schemas.paciente import PacienteSchema
 
 
 class SalaEsperaCreate(BaseModel):
@@ -67,5 +68,6 @@ class SalaEsperaSchema(BaseModel):
     estado: EstadoSalaEspera
     consultorio: Optional[int] = None
     motivo: str
+    paciente: Optional[PacienteSchema] = None
 
     model_config = {"from_attributes": True}
