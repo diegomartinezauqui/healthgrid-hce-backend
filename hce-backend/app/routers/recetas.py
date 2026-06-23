@@ -227,3 +227,32 @@ async def dispensar_receta(
         )
 
 
+@router.get(
+    "/medicamentos",
+    summary="Consultar listado de medicamentos disponibles (Vademecum Mock)",
+    description="Retorna una lista estática de medicamentos comunes para autocompletar en el frontend.",
+)
+async def listar_medicamentos(q: Optional[str] = None):
+    meds = [
+        {"id": 1, "nombre": "Ibuprofeno 600mg", "presentacion": "Comprimidos"},
+        {"id": 2, "nombre": "Paracetamol 500mg", "presentacion": "Comprimidos"},
+        {"id": 3, "nombre": "Amoxicilina 500mg", "presentacion": "Comprimidos"},
+        {"id": 4, "nombre": "Clonazepam 2mg", "presentacion": "Comprimidos"},
+        {"id": 5, "nombre": "Metformina 850mg", "presentacion": "Comprimidos"},
+        {"id": 6, "nombre": "Losartán 50mg", "presentacion": "Comprimidos"},
+        {"id": 7, "nombre": "Atorvastatina 20mg", "presentacion": "Comprimidos"},
+        {"id": 8, "nombre": "Aspirina 100mg", "presentacion": "Comprimidos"},
+        {"id": 9, "nombre": "Omeprazol 20mg", "presentacion": "Cápsulas"},
+        {"id": 10, "nombre": "Enalapril 10mg", "presentacion": "Comprimidos"},
+        {"id": 11, "nombre": "Sildenafil 50mg", "presentacion": "Comprimidos"},
+        {"id": 12, "nombre": "Diclofenac 75mg", "presentacion": "Comprimidos"},
+        {"id": 13, "nombre": "Loratadina 10mg", "presentacion": "Comprimidos"},
+        {"id": 14, "nombre": "Levotiroxina 100mcg", "presentacion": "Comprimidos"},
+        {"id": 15, "nombre": "Salbutamol Aerosol", "presentacion": "Inhalador"},
+    ]
+    if q:
+        q_lower = q.lower()
+        return [m for m in meds if q_lower in m["nombre"].lower()]
+    return meds
+
+

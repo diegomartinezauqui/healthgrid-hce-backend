@@ -124,3 +124,20 @@ async def test_crear_receta_master_detail(client: AsyncClient, db: AsyncSession,
     assert res_dispensar_again.json()["detail"]["error"] == "UNPROCESSABLE_ENTITY"
 
 
+@pytest.mark.asyncio
+async def test_listar_medicamentos(client: AsyncClient, auth_headers: dict):
+    # 1. Obtener listado completo de medicamentos sin filtros
+    res = await client.get("/api/v1/medicamentos", headers=auth_headers)
+    assert res.status_code == 200
+    meds = res.json()
+    assert len(meds) >= 15
+    assert any(m["nombre"] == "Ibuprofeno 600mg" for m in meds)
+
+    # 2. Filtrar medicamentos por consulta "amoxi"
+    res_filter = await client.get("/api/v1/medicamentos?q=amoxi", headers=auth_headers)
+    assert res_filter.status_code == 200
+    filtered_meds = res_filter.json()
+    assert len(filtered_meds) == 1
+    assert filtered_meds[0]["nombre"] == "Amoxicilina 500mg"
+
+
