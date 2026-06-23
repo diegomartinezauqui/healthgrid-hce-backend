@@ -89,6 +89,11 @@ class EpisodioResumen(BaseModel):
     fecha_cierre: Optional[datetime] = Field(None, examples=["2025-03-15T11:00:00Z"])
     id_medico_responsable: int = Field(..., examples=[42])
 
+    # NUEVOS CONTADORES AGREGADOS
+    cant_evoluciones: int = Field(default=0, description="Cantidad de evoluciones clínicas en este episodio.")
+    cant_recetas: int = Field(default=0, description="Cantidad de recetas digitales emitidas en este episodio.")
+    cant_estudios: int = Field(default=0, description="Cantidad de pedidos de estudios médicos solicitados en este episodio.")
+
     model_config = {"from_attributes": True}
 
 

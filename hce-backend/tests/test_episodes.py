@@ -217,6 +217,18 @@ async def test_evoluciones_flow(
     assert response_patch.status_code == 200
     assert response_patch.json()["contenido"] == "Paciente presenta fiebre."
 
+    # 6.5 Verificar contadores agregados en el listado de episodios
+    response_ep_list = await client.get(
+        "/api/v1/patients/1003/episodes",
+        headers=auth_headers
+    )
+    assert response_ep_list.status_code == 200
+    ep_list_data = response_ep_list.json()
+    assert ep_list_data["total"] == 1
+    assert ep_list_data["episodios"][0]["cant_evoluciones"] == 1
+    assert ep_list_data["episodios"][0]["cant_recetas"] == 0
+    assert ep_list_data["episodios"][0]["cant_estudios"] == 0
+
     # 7. Intentar crear evolución en episodio cerrado
     # Cerrar episodio
     await client.patch(
