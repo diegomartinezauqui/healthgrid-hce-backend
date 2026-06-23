@@ -12,7 +12,7 @@ from app.models.episodio import Episodio
 from app.repositories.paciente_repository import paciente_repo
 from app.repositories.sala_espera_repository import sala_espera_repo
 from app.schemas.sala_espera import SalaEsperaCreate
-from common.enums.enums_sala_espera import EstadoSalaEspera
+from common.enums.enums_sala_espera import EstadoSalaEspera, TipoAtencion
 from common.enums.enums_episodio import EstadoEpisodio, TipoEpisodio
 from app.schemas.episodio import EpisodioCreate
 from app.services import episodio_service
@@ -58,6 +58,7 @@ async def ingresar_paciente(
         estado=EstadoSalaEspera.ESPERANDO,
         consultorio=None,
         motivo="-",
+        tipo_atencion=data.tipo_atencion or TipoAtencion.CONSULTORIO,
     )
     
     await sala_espera_repo.save(db, nueva_espera)
@@ -146,6 +147,7 @@ async def actualizar_prioridad(
     id_espera: int,
     prioridad: int,
     motivo: Optional[str] = None,
+    id_medico_triage: Optional[int] = None,
 ) -> Optional[SalaEspera]:
     """Actualiza el nivel de prioridad de urgencia del paciente (Triage)."""
     registro = await sala_espera_repo.get(db, id_espera)
@@ -155,6 +157,8 @@ async def actualizar_prioridad(
     registro.prioridad = prioridad
     if motivo is not None:
         registro.motivo = motivo
+    if id_medico_triage is not None:
+        registro.id_medico_triage = id_medico_triage
     await db.flush()
     return registro
 

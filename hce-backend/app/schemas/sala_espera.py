@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydantic import AliasChoices, BaseModel, Field
 
-from common.enums.enums_sala_espera import EstadoSalaEspera
+from common.enums.enums_sala_espera import EstadoSalaEspera, TipoAtencion
 from app.schemas.paciente import PacienteSchema
 
 
@@ -22,6 +22,7 @@ class SalaEsperaCreate(BaseModel):
     id_turno_m2: Optional[int] = Field(None, examples=[88402])
     fecha_turno: Optional[datetime] = Field(None, examples=["2026-06-19T10:00:00Z"])
     fecha_llegada: Optional[datetime] = Field(None, examples=["2026-06-21T09:45:00Z"])
+    tipo_atencion: Optional[TipoAtencion] = Field(TipoAtencion.CONSULTORIO, description="Tipo de atención requerida", examples=["consultorio"])
 
 
 class SalaEsperaPrioridad(BaseModel):
@@ -29,6 +30,7 @@ class SalaEsperaPrioridad(BaseModel):
 
     prioridad: int = Field(..., ge=1, le=5, description="Nivel de prioridad/urgencia asignado (1-5)", examples=[3])
     motivo: Optional[str] = Field(None, description="Motivo de la consulta (opcional)", examples=["Control post-operatorio"])
+    id_medico_triage: Optional[int] = Field(None, description="ID del médico que realiza el triage (opcional)", examples=[42])
 
 
 
@@ -68,6 +70,8 @@ class SalaEsperaSchema(BaseModel):
     estado: EstadoSalaEspera
     consultorio: Optional[int] = None
     motivo: str
+    tipo_atencion: TipoAtencion
+    id_medico_triage: Optional[int] = None
     paciente: Optional[PacienteSchema] = None
 
     model_config = {"from_attributes": True}

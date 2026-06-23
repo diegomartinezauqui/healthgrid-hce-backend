@@ -52,6 +52,8 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     id_espera_1 = data_1["id_espera"]
     assert data_1["id_episodio"] is None
     assert data_1["motivo"] == "-"
+    assert data_1["tipo_atencion"] == "consultorio"
+    assert data_1["id_medico_triage"] is None
     assert data_1["paciente"] is not None
     assert data_1["paciente"]["id_paciente"] == 3001
     assert data_1["paciente"]["datos_personales"]["nombre"] == "Paciente Uno"
@@ -91,6 +93,7 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     assert res_prioridad.status_code == 200
     assert res_prioridad.json()["prioridad"] == 3
     assert res_prioridad.json()["motivo"] == "-"
+    assert res_prioridad.json()["id_medico_triage"] == 42
 
     # Actualizar prioridad nuevamente, esta vez enviando también un motivo de consulta
     res_prioridad_motivo = await client.patch(
@@ -101,6 +104,7 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     assert res_prioridad_motivo.status_code == 200
     assert res_prioridad_motivo.json()["prioridad"] == 4
     assert res_prioridad_motivo.json()["motivo"] == "Dolor fuerte de cabeza"
+    assert res_prioridad_motivo.json()["id_medico_triage"] == 42
 
 
 

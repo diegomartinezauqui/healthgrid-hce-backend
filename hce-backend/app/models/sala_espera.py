@@ -6,7 +6,7 @@ from sqlalchemy import DateTime, Enum, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from common.enums.enums_sala_espera import EstadoSalaEspera
+from common.enums.enums_sala_espera import EstadoSalaEspera, TipoAtencion
 
 
 class SalaEspera(Base):
@@ -32,6 +32,12 @@ class SalaEspera(Base):
     )
     consultorio: Mapped[int | None] = mapped_column(Integer, nullable=True)
     motivo: Mapped[str | None] = mapped_column(String(500), default="-", server_default="-", nullable=True)
+    tipo_atencion: Mapped[TipoAtencion] = mapped_column(
+        Enum(TipoAtencion, name="tipo_atencion_enum", values_callable=lambda x: [e.value for e in x]),
+        default=TipoAtencion.CONSULTORIO,
+        nullable=False,
+    )
+    id_medico_triage: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     # ─── Relaciones ───────────────────────────────────────────────
     paciente = relationship("Paciente", back_populates="sala_espera_registros", lazy="selectin")

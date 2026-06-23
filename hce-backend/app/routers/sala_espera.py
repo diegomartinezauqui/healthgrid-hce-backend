@@ -180,9 +180,9 @@ async def actualizar_prioridad(
     id_espera: int,
     body: SalaEsperaPrioridad,
     db: DbSession,
-    _user=Depends(require_permission("hce:episodes:write")),
+    user=Depends(require_permission("hce:episodes:write")),
 ):
-    registro = await sala_espera_service.actualizar_prioridad(db, id_espera, body.prioridad, body.motivo)
+    registro = await sala_espera_service.actualizar_prioridad(db, id_espera, body.prioridad, body.motivo, body.id_medico_triage or user.sub)
     if not registro:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

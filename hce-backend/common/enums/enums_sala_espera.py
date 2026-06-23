@@ -7,3 +7,10 @@ class EstadoSalaEspera(str, Enum):
     ATENDIDO = "Atendido"
     AUSENTE = "Ausente"
     FINALIZADO = "Finalizado"
+
+
+class TipoAtencion(str, Enum):
+    CONSULTORIO = "consultorio"
+    GUARDIA = "guardia"
+    CIRUGIA = "cirugia"
+    DEMANDA_ESPONTANEA = "demanda_espontanea"
