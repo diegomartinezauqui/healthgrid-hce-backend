@@ -38,6 +38,21 @@ async def solicitar_internacion(
     Raises:
         RuntimeError: Si M6 devuelve un error HTTP o no está disponible.
     """
+    # ── Modo integración mockeada: no se llama a M6 real ──
+    if settings.integraciones_mockeadas:
+        logger.info(
+            "🧪 [MOCK M6] Solicitud de internación simulada — paciente: %s, sector: %s, prioridad: %s",
+            solicitud.id_paciente,
+            solicitud.sector_solicitado,
+            solicitud.prioridad,
+        )
+        return {
+            "status": "accepted",
+            "id_solicitud": f"MOCK-SOL-{solicitud.id_paciente}",
+            "mensaje": "Solicitud recibida por M6 (mock). Se notificará el ingreso vía POST /internacion/ingreso.",
+            "mock": True,
+        }
+
     try:
         import httpx
 
