@@ -28,6 +28,15 @@ class Settings(BaseSettings):
     # ─── URLs de otros módulos ────────────────────────────────────
     CORE_BASE_URL: str = "http://localhost:8010/api/v1"
     M6_BASE_URL: str = "http://localhost:8006/api"
+    M5_BASE_URL: str = "https://uade-da2-backend.onrender.com"
+    M4_BASE_URL: str = "http://localhost:8004/api"
+    HCE_PUBLIC_URL: str = "http://localhost:8000"
+
+    # ─── Modo de integración con otros módulos ───────────────────
+    # "mock" → los clients de salida loguean y devuelven respuestas canónicas
+    #          (no hacen HTTP real). Webhooks de entrada siguen funcionando.
+    # "live" → se realizan las llamadas HTTP reales a los otros módulos.
+    INTEGRATION_MODE: str = "mock"
 
     # ─── Kafka opcional ──────────────────────────────────────────
     ENABLE_KAFKA: bool = False
@@ -57,6 +66,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    @property
+    def integraciones_mockeadas(self) -> bool:
+        return self.INTEGRATION_MODE.lower() != "live"
 
 
 settings = Settings()

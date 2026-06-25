@@ -28,6 +28,8 @@ from app.routers import (
     recetas,
     resultados,
     sala_espera,
+    solicitudes_cama,
+    webhooks,
 )
 
 
@@ -45,6 +47,10 @@ async def lifespan(app: FastAPI):
         consumer_task = asyncio.create_task(start_kafka_consumer())
     else:
         print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
+
+    # Registro de suscripciones ante el Core en segundo plano
+    from app.services.core_subscription import registrar_suscripciones_core
+    asyncio.create_task(registrar_suscripciones_core())
 
     yield
     # ── Shutdown ──
@@ -96,9 +102,11 @@ app.include_router(recetas.router, prefix=API_PREFIX, tags=["Atención Clínica 
 app.include_router(sala_espera.router, prefix=API_PREFIX, tags=["Atención Clínica — Sala de Espera"])
 app.include_router(health.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
-app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
-app.include_router(resultados.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
+app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Atención Clínica — Órdenes Médicas"])
+app.include_router(resultados.router, prefix=API_PREFIX, tags=["Atención Clínica — Órdenes Médicas"])
 app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6 (Camas)"])
+app.include_router(solicitudes_cama.router, prefix=API_PREFIX)
+app.include_router(webhooks.router, prefix=API_PREFIX)
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
 
