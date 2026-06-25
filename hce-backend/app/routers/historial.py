@@ -78,15 +78,4 @@ async def historial_resultados(
     _user=Depends(require_permission("hce:resultados:read")),
 ):
     resultados = await resultado_service.get_resultados_paciente(db, id_paciente)
-
-    return [
-        ResultadoEstudioResumen(
-            id_resultado=r.id_resultado,
-            tipo_estudio=r.tipo_estudio,
-            fecha_resultado=r.fecha_resultado,
-            titulo=r.titulo,
-            resumen=r.resumen,
-            profesional_firmante=r.id_profesional_firmante,
-        )
-        for r in resultados
-    ]
+    return resultados

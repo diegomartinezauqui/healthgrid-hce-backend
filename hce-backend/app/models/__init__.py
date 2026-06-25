@@ -15,8 +15,9 @@ from app.models.movimiento_internacion import MovimientoInternacion
 from app.models.orden import Orden
 from app.models.paciente import Paciente
 from app.models.receta import Receta
-from app.models.resultado import Resultado
+from app.models.resultado import ResultadoLaboratorio, ResultadoImagen
 from app.models.sala_espera import SalaEspera
+from app.models.solicitud_cama import SolicitudCama
 
 __all__ = [
     "Paciente",
@@ -30,7 +31,9 @@ __all__ = [
     "Receta",
     "ItemReceta",
     "Orden",
-    "Resultado",
+    "ResultadoLaboratorio",
+    "ResultadoImagen",
     "CoberturaMedica",
     "SalaEspera",
+    "SolicitudCama",
 ]
