@@ -187,3 +187,74 @@ async def test_flujo_completo_ordenes_y_resultados(
     assert len(res_lab.analitos) == 1
     assert res_lab.analitos[0]["nombre"] == "Glucosa"
     assert res_lab.analitos[0]["valor"] == 95.0
+
+
+@pytest.mark.asyncio
+async def test_listar_ordenes_paciente(
+    client: AsyncClient,
+    db: AsyncSession,
+    auth_headers: dict,
+):
+    # 1. Crear un paciente de prueba
+    paciente_id = 20500
+    paciente = Paciente(id_paciente=paciente_id, datos_personales={"nombre": "María López"})
+    db.add(paciente)
+    await db.commit()
+
+    # 2. Crear un par de órdenes
+    orden1 = Orden(
+        id_paciente=paciente_id,
+        tipo_estudio="Laboratorio",
+        descripcion_pedido="Rutina de sangre",
+        prioridad="Normal",
+        estado="Pendiente",
+        id_medico_solicitante=101,
+    )
+    orden2 = Orden(
+        id_paciente=paciente_id,
+        tipo_estudio="Imagen",
+        descripcion_pedido="Ecografía abdominal",
+        prioridad="Urgente",
+        estado="Pendiente",
+        id_medico_solicitante=101,
+        subtipo="ECOGRAFY",
+    )
+    db.add_all([orden1, orden2])
+    await db.commit()
+
+    # 3. Consultar las órdenes con autenticación exitosa
+    response = await client.get(
+        f"/api/v1/pacientes/{paciente_id}/ordenes",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    json_data = response.json()
+    assert json_data["status"] == "success"
+    assert json_data["cantidad"] == 2
+    
+    ordenes_data = json_data["data"]
+    # Al ordenar por fecha_creacion desc, orden2 o orden1 vendrán en cierto orden
+    assert any(o["descripcion_pedido"] == "Rutina de sangre" and o["estado"] == "Pendiente" for o in ordenes_data)
+    assert any(o["descripcion_pedido"] == "Ecografía abdominal" and o["subtipo"] == "ECOGRAFY" and o["estado"] == "Pendiente" for o in ordenes_data)
+
+    # 4. Probar sin token de autenticación (401)
+    response_unauth = await client.get(
+        f"/api/v1/pacientes/{paciente_id}/ordenes"
+    )
+    assert response_unauth.status_code == 401
+
+    # 5. Probar con token sin los permisos requeridos (403)
+    login_req_no_perm = DevLoginRequest(
+        sub=102,
+        sede_id=1,
+        permissions=["hce:pacientes:read"],  # No tiene hce:ordenes:read
+    )
+    token_res_no_perm = generate_dev_token(login_req_no_perm)
+    bad_headers = {"Authorization": f"Bearer {token_res_no_perm.access_token}"}
+    
+    response_forbidden = await client.get(
+        f"/api/v1/pacientes/{paciente_id}/ordenes",
+        headers=bad_headers,
+    )
+    assert response_forbidden.status_code == 403
+

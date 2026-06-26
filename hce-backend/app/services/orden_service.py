@@ -31,6 +31,16 @@ async def get_ordenes(
     return list(result.scalars().all())
 
 
+async def get_ordenes_paciente(
+    db: AsyncSession,
+    id_paciente: int,
+) -> list[Orden]:
+    """Obtener listado de todas las órdenes de un paciente."""
+    query = select(Orden).where(Orden.id_paciente == id_paciente).order_by(Orden.fecha_creacion.desc())
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
 async def get_orden_by_id(db: AsyncSession, id_orden: int) -> Optional[Orden]:
     """Obtener una orden por su ID."""
     result = await db.execute(select(Orden).where(Orden.id_orden == id_orden))

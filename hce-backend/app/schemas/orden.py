@@ -62,6 +62,7 @@ class OrdenMedicaCompleta(BaseModel):
     id_medico_solicitante: Optional[int] = Field(None, examples=[42])
     subtipo: Optional[SubtipoEstudio] = Field(None, examples=["RESONANCE"])
     estudio_ids: Optional[List[int]] = Field(None, examples=[[1, 2]])
+    estado: str = Field(default="Pendiente", examples=["Pendiente"])
     alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}

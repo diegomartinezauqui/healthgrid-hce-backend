@@ -62,6 +62,7 @@ async def listar_ordenes(
                 id_medico_solicitante=orden.id_medico_solicitante,
                 subtipo=orden.subtipo,
                 estudio_ids=orden.estudio_ids,
+                estado=orden.estado,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -112,11 +113,56 @@ async def obtener_orden(
         id_medico_solicitante=orden.id_medico_solicitante,
         subtipo=orden.subtipo,
         estudio_ids=orden.estudio_ids,
+        estado=orden.estado,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
         ],
     )
+
+
+@router.get(
+    "/pacientes/{id_paciente}/ordenes",
+    response_model=OrdenListResponse,
+    summary="Listar órdenes de un paciente",
+    description="Retorna todas las órdenes médicas (bioquímicas y de imágenes) de un paciente.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+    },
+)
+async def listar_ordenes_paciente(
+    id_paciente: int,
+    db: DbSession,
+    _user=Depends(require_permission("hce:ordenes:read")),
+):
+    ordenes = await orden_service.get_ordenes_paciente(db, id_paciente=id_paciente)
+
+    data = []
+    for orden in ordenes:
+        alertas = await orden_service.get_alertas_clinicas_paciente(db, orden.id_paciente)
+        data.append(
+            OrdenMedicaCompleta(
+                id_orden=orden.id_orden,
+                id_paciente=orden.id_paciente,
+                tipo_estudio=orden.tipo_estudio,
+                descripcion_pedido=orden.descripcion_pedido,
+                prioridad=orden.prioridad,
+                id_episodio=orden.id_episodio,
+                id_evolucion=orden.id_evolucion,
+                fecha_creacion=orden.fecha_creacion,
+                id_medico_solicitante=orden.id_medico_solicitante,
+                subtipo=orden.subtipo,
+                estudio_ids=orden.estudio_ids,
+                estado=orden.estado,
+                alertas_clinicas=[
+                    AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
+                    for a in alertas
+                ],
+            )
+        )
+
+    return OrdenListResponse(status="success", cantidad=len(data), data=data)
 
 
 @router.post(
