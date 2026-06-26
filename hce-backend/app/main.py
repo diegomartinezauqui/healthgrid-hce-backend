@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     Aquí se podrían inicializar conexiones a Kafka, caches, etc.
     """
     # ── Startup ──
-    print("🏥 HCE Module starting up...")
+    print("HCE Module starting up...")
     consumer_task = None
     if settings.ENABLE_KAFKA:
         await kafka_producer.start()
@@ -54,7 +54,7 @@ async def lifespan(app: FastAPI):
 
     yield
     # ── Shutdown ──
-    print("🥞 HCE Module shutting down...")
+    print("HCE Module shutting down...")
     if consumer_task is not None and not consumer_task.done():
         consumer_task.cancel()
         try:

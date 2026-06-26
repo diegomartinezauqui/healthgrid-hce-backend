@@ -7,10 +7,38 @@ from typing import Optional
 
 from fastapi import APIRouter
 from fastapi.responses import HTMLResponse
+from sqlalchemy import select
 
 from app.auth.dev_auth import DevLoginRequest, DevLoginResponse, generate_dev_token
+from app.dependencies import DbSession
+from app.models.paciente import Paciente
 
 router = APIRouter()
+
+
+@router.post(
+    "/dev/paciente",
+    summary="[DEV] Crear o confirmar paciente de prueba en la caché local",
+    description="Inserta un paciente en la tabla local de HCE si no existe. Necesario antes de crear episodios en desarrollo.",
+)
+async def dev_crear_paciente(db: DbSession, id_paciente: int = 10500):
+    result = await db.execute(select(Paciente).where(Paciente.id_paciente == id_paciente))
+    paciente = result.scalar_one_or_none()
+    if paciente:
+        return {"status": "already_exists", "id_paciente": id_paciente}
+    paciente = Paciente(
+        id_paciente=id_paciente,
+        datos_personales={
+            "nombre": "Paciente Dev",
+            "apellido": "Test",
+            "dni": "00000000",
+            "fecha_nacimiento": "1990-01-01",
+            "sexo": "M",
+        },
+    )
+    db.add(paciente)
+    await db.commit()
+    return {"status": "created", "id_paciente": id_paciente}
 
 
 @router.post(
@@ -104,7 +132,7 @@ async def dev_simulador():
         </header>
 
         <!-- Navigation Tabs -->
-        <nav class="flex gap-2 p-1.5 bg-slate-900/60 rounded-xl mb-8 max-w-md border border-slate-800/80">
+        <nav class="flex gap-2 p-1.5 bg-slate-900/60 rounded-xl mb-8 max-w-2xl border border-slate-800/80">
             <button onclick="switchTab('m2')" id="btn-m2" class="flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-white bg-indigo-600 shadow-md">
                 M2 - Sala Espera
             </button>
@@ -113,6 +141,9 @@ async def dev_simulador():
             </button>
             <button onclick="switchTab('m45')" id="btn-m45" class="flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
                 M4/M5 - Estudios
+            </button>
+            <button onclick="switchTab('m6')" id="btn-m6" class="flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-400 hover:text-white">
+                M6 - Camas
             </button>
         </nav>
 
@@ -226,6 +257,115 @@ async def dev_simulador():
                     </div>
                 </section>
 
+                <!-- TAB M6: Camas / Internación -->
+                <section id="tab-m6" class="glass-card p-6 rounded-2xl shadow-xl space-y-6 hidden">
+                    <div>
+                        <h2 class="text-xl font-semibold text-white">Simulación Módulo 6: Gestión de Camas e Internación</h2>
+                        <p class="text-slate-400 text-xs mt-1">Ciclo completo: Crear episodio → Solicitar cama → Simular respuesta M6 → Registrar ingreso.</p>
+                    </div>
+
+                    <!-- Paso 1: Configurar paciente y episodio -->
+                    <div class="p-4 bg-slate-900/50 rounded-xl border border-slate-800 space-y-3">
+                        <h3 class="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Paso 1 — Preparar Paciente y Episodio</h3>
+                        <div class="flex gap-3 items-end">
+                            <div class="flex-1">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ID Paciente</label>
+                                <input id="m6-id-paciente" type="number" value="10500" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div class="flex-1">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Tipo de Episodio</label>
+                                <select id="m6-tipo-episodio" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="guardia">Guardia</option>
+                                    <option value="internacion">Internación</option>
+                                    <option value="consulta_externa">Consulta Externa</option>
+                                </select>
+                            </div>
+                            <button onclick="seedPacienteYCrearEpisodio()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg text-sm transition-all">
+                                Crear Episodio
+                            </button>
+                        </div>
+                        <div id="m6-episodio-status" class="text-xs text-slate-500 font-mono">
+                            Sin episodio activo. Crea uno o ingresa el ID manualmente abajo.
+                        </div>
+                    </div>
+
+                    <!-- Paso 2 y 3: dos columnas -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                        <!-- Paso 2: Crear Solicitud de Cama -->
+                        <div class="p-4 bg-slate-900/40 rounded-xl border border-slate-800 space-y-3">
+                            <h3 class="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Paso 2 — Solicitar Cama (HCE → M6)</h3>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Tipo</label>
+                                <select id="m6-tipo-sol" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="internacion">Internación</option>
+                                    <option value="pase">Pase de cama</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Prioridad</label>
+                                <select id="m6-prioridad-sol" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                                    <option value="Alta">Alta</option>
+                                    <option value="Media" selected>Media</option>
+                                    <option value="Baja">Baja</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Sector</label>
+                                <input id="m6-sector-sol" type="text" value="UTI — Unidad de Terapia Intensiva" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Motivo clínico</label>
+                                <input id="m6-motivo-sol" type="text" value="Paciente requiere monitoreo intensivo." class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <button onclick="crearSolicitudCamaM6()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium rounded-lg text-sm transition-all">
+                                Crear Solicitud de Cama
+                            </button>
+                        </div>
+
+                        <!-- Paso 3: Ver solicitudes activas -->
+                        <div class="p-4 bg-slate-900/40 rounded-xl border border-slate-800 space-y-3">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Paso 3 — Solicitudes del Episodio</h3>
+                                <button onclick="cargarSolicitudesM6()" class="px-3 py-1 text-xs bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg transition-all">
+                                    Actualizar
+                                </button>
+                            </div>
+                            <div id="m6-solicitudes-container" class="space-y-2">
+                                <p class="text-slate-500 text-xs text-center py-6">Crea un episodio y una solicitud para verla aquí.</p>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Paso 4: Simular Ingreso (M6 → HCE) -->
+                    <div class="p-4 bg-slate-900/40 rounded-xl border border-indigo-500/20 space-y-3">
+                        <h3 class="text-sm font-semibold text-indigo-400 uppercase tracking-wider">Paso 4 — Simular Callback M6 → HCE <span class="text-slate-500 text-[10px] font-normal">POST /internacion/ingreso</span></h3>
+                        <p class="text-slate-400 text-xs">Simula que M6 ya asignó una cama y notifica el ingreso físico del paciente. Esto crea el Episodio de Internación en la HCE.</p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ID Episodio (opcional)</label>
+                                <input id="m6-cb-id-episodio" type="number" placeholder="Auto" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Sector</label>
+                                <input id="m6-cb-sector" type="text" value="UTI" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Habitación</label>
+                                <input id="m6-cb-habitacion" type="text" value="Terapia A" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Cama</label>
+                                <input id="m6-cb-cama" type="text" value="Cama 4" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                        </div>
+                        <button onclick="simularIngresoM6()" class="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-medium rounded-lg text-sm transition-all">
+                            Simular Ingreso de M6 (POST /internacion/ingreso)
+                        </button>
+                    </div>
+                </section>
+
             </div>
 
             <!-- Terminal logs (col-span-1) -->
@@ -254,7 +394,7 @@ async def dev_simulador():
 
         // Switch Tabs
         function switchTab(tabId) {
-            const tabs = ['m2', 'm3', 'm45'];
+            const tabs = ['m2', 'm3', 'm45', 'm6'];
             tabs.forEach(t => {
                 document.getElementById(`tab-${t}`).classList.add('hidden');
                 document.getElementById(`btn-${t}`).className = "flex-1 py-2 text-sm font-medium rounded-lg transition-all duration-200 text-slate-400 hover:text-white";
@@ -729,6 +869,210 @@ async def dev_simulador():
             } catch (e) {
                 logToConsole(`❌ Error de red: ${e.message}`, 'error');
             }
+        }
+
+        // ─── M6: Camas ────────────────────────────────────────────────
+        let m6EpisodioId = null;
+        let m6PacienteId = 10500;
+
+        async function seedPacienteYCrearEpisodio() {
+            const idPaciente = parseInt(document.getElementById('m6-id-paciente').value) || 10500;
+            // Primero asegurar que el paciente existe en la caché local
+            try {
+                const res = await fetch(`/api/v1/dev/paciente?id_paciente=${idPaciente}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${devToken}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    const msg = data.status === 'created'
+                        ? `Paciente #${idPaciente} creado en la cache local.`
+                        : `Paciente #${idPaciente} ya existia en la cache local.`;
+                    logToConsole(msg, 'success');
+                } else {
+                    logToConsole(`Error al seed paciente: ${JSON.stringify(data)}`, 'error');
+                    return;
+                }
+            } catch (e) {
+                logToConsole(`Error: ${e.message}`, 'error');
+                return;
+            }
+            await crearEpisodioM6();
+        }
+
+        async function crearEpisodioM6() {
+            const idPaciente = parseInt(document.getElementById('m6-id-paciente').value) || 10500;
+            m6PacienteId = idPaciente;
+            const tipo = document.getElementById('m6-tipo-episodio').value;
+            const url = `/api/v1/patients/${idPaciente}/episodes`;
+            const payload = { tipo, id_sede: 1, diagnostico_principal: 'Episodio de prueba — simulacion M6' };
+            logToConsole(`POST ${url} — Crear episodio tipo "${tipo}"`, 'sent');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${devToken}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    m6EpisodioId = data.id_episodio;
+                    document.getElementById('m6-cb-id-episodio').value = m6EpisodioId;
+                    document.getElementById('m6-episodio-status').innerHTML =
+                        `<span class="text-emerald-400 font-semibold">Episodio #${m6EpisodioId} activo</span> — Paciente ${idPaciente} | Tipo: ${tipo}`;
+                    logToConsole(`201 OK — Episodio #${m6EpisodioId} creado. Listo para solicitar cama.`, 'success');
+                    await cargarSolicitudesM6();
+                } else {
+                    logToConsole(`${res.status} Error: ${JSON.stringify(data.detail)}`, 'error');
+                }
+            } catch (e) { logToConsole(`Error: ${e.message}`, 'error'); }
+        }
+
+        async function crearSolicitudCamaM6() {
+            if (!m6EpisodioId) { alert('Primero crea un episodio (Paso 1).'); return; }
+            const url = `/api/v1/patients/${m6PacienteId}/episodes/${m6EpisodioId}/solicitudes-cama`;
+            const payload = {
+                tipo: document.getElementById('m6-tipo-sol').value,
+                prioridad: document.getElementById('m6-prioridad-sol').value,
+                sector: document.getElementById('m6-sector-sol').value || undefined,
+                motivo: document.getElementById('m6-motivo-sol').value || undefined,
+            };
+            logToConsole(`POST ${url} — Payload: ${JSON.stringify(payload)}`, 'sent');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${devToken}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    logToConsole(`201 OK — Solicitud #${data.id_solicitud} creada. Estado: ${data.estado}. M6 notificado (mock).`, 'success');
+                    await cargarSolicitudesM6();
+                } else {
+                    logToConsole(`${res.status} Error: ${JSON.stringify(data.detail)}`, 'error');
+                }
+            } catch (e) { logToConsole(`Error: ${e.message}`, 'error'); }
+        }
+
+        async function cargarSolicitudesM6() {
+            if (!m6EpisodioId) return;
+            const url = `/api/v1/patients/${m6PacienteId}/episodes/${m6EpisodioId}/solicitudes-cama`;
+            try {
+                const res = await fetch(url, { headers: { 'Authorization': `Bearer ${devToken}` } });
+                const data = await res.json();
+                if (res.ok) {
+                    logToConsole(`GET ${url} — ${data.solicitudes.length} solicitudes encontradas.`, 'success');
+                    renderSolicitudesM6(data);
+                }
+            } catch (e) { logToConsole(`Error cargando solicitudes: ${e.message}`, 'error'); }
+        }
+
+        function renderSolicitudesM6(data) {
+            const container = document.getElementById('m6-solicitudes-container');
+            const colores = {
+                'Pendiente': 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                'Aceptada':  'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+                'Rechazada': 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+                'Cancelada': 'bg-slate-500/10 text-slate-400 border-slate-500/20',
+            };
+            let camaHtml = '';
+            if (data.internado && data.cama_actual) {
+                const c = data.cama_actual;
+                camaHtml = `<div class="p-2 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs mb-2">
+                    <span class="text-emerald-400 font-semibold">INTERNADO</span>
+                    <span class="text-slate-300 ml-2">${c.sector || ''} | ${c.habitacion || ''} | ${c.cama || ''}</span>
+                </div>`;
+            }
+            if (!data.solicitudes || data.solicitudes.length === 0) {
+                container.innerHTML = camaHtml + '<p class="text-slate-500 text-xs text-center py-4">Sin solicitudes para este episodio.</p>';
+                return;
+            }
+            container.innerHTML = camaHtml + data.solicitudes.map(s => {
+                const badge = colores[s.estado] || 'bg-slate-700 text-slate-400';
+                const acciones = s.estado === 'Pendiente' ? `
+                    <div class="flex gap-1.5 mt-2">
+                        <button onclick="resolverSolicitudM6(${s.id_solicitud}, 'aceptada')" class="flex-1 py-1 text-[10px] bg-emerald-600 hover:bg-emerald-500 text-white rounded font-medium">Aceptar</button>
+                        <button onclick="resolverSolicitudM6(${s.id_solicitud}, 'rechazada')" class="flex-1 py-1 text-[10px] bg-rose-600 hover:bg-rose-500 text-white rounded font-medium">Rechazar</button>
+                        <button onclick="cancelarSolicitudM6(${s.id_solicitud})" class="px-2 py-1 text-[10px] bg-slate-700 hover:bg-slate-600 text-slate-300 rounded font-medium">Cancelar</button>
+                    </div>` : '';
+                return `<div class="p-3 bg-slate-950/80 border border-slate-800 rounded-lg space-y-1 text-xs">
+                    <div class="flex justify-between items-center">
+                        <span class="font-semibold text-slate-200">Solicitud #${s.id_solicitud}</span>
+                        <span class="px-2 py-0.5 text-[10px] font-semibold border rounded-full ${badge}">${s.estado}</span>
+                    </div>
+                    <div class="text-slate-400">Tipo: <span class="text-slate-300">${s.tipo}</span> | Prioridad: <span class="text-slate-300">${s.prioridad}</span></div>
+                    ${s.sector ? `<div class="text-slate-400">Sector: <span class="text-indigo-300">${s.sector}</span></div>` : ''}
+                    ${s.cama ? `<div class="text-emerald-400">Cama: ${s.cama} | Hab: ${s.habitacion || '-'}</div>` : ''}
+                    ${s.motivo_rechazo ? `<div class="text-rose-400">Rechazo: ${s.motivo_rechazo}</div>` : ''}
+                    ${acciones}
+                </div>`;
+            }).join('');
+        }
+
+        async function resolverSolicitudM6(idSolicitud, decision) {
+            const url = `/api/v1/solicitudes-cama/${idSolicitud}/resolver`;
+            const payload = decision === 'aceptada'
+                ? { decision, cama: 'Cama 4', habitacion: 'Hab 201' }
+                : { decision, motivo_rechazo: 'Sin disponibilidad en el sector solicitado.' };
+            logToConsole(`POST ${url} — decision: "${decision}"`, 'sent');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${devToken}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    logToConsole(`200 OK — Solicitud #${idSolicitud} ${decision}. ${decision === 'aceptada' ? 'Cama 4 / Hab 201 asignada.' : ''}`, 'success');
+                    await cargarSolicitudesM6();
+                } else { logToConsole(`${res.status} Error: ${JSON.stringify(data.detail)}`, 'error'); }
+            } catch (e) { logToConsole(`Error: ${e.message}`, 'error'); }
+        }
+
+        async function cancelarSolicitudM6(idSolicitud) {
+            const url = `/api/v1/solicitudes-cama/${idSolicitud}/cancelar`;
+            logToConsole(`POST ${url} — Cancelar solicitud #${idSolicitud}`, 'sent');
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${devToken}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    logToConsole(`200 OK — Solicitud #${idSolicitud} cancelada.`, 'success');
+                    await cargarSolicitudesM6();
+                } else { logToConsole(`${res.status} Error: ${JSON.stringify(data.detail)}`, 'error'); }
+            } catch (e) { logToConsole(`Error: ${e.message}`, 'error'); }
+        }
+
+        async function simularIngresoM6() {
+            const idPaciente = parseInt(document.getElementById('m6-id-paciente').value) || m6PacienteId;
+            const idEpField = document.getElementById('m6-cb-id-episodio').value;
+            const sector = document.getElementById('m6-cb-sector').value || 'UTI';
+            const habitacion = document.getElementById('m6-cb-habitacion').value || null;
+            const cama = document.getElementById('m6-cb-cama').value;
+            if (!cama) { alert('Ingresa el número de cama.'); return; }
+            const payload = {
+                id_paciente: idPaciente,
+                sector,
+                cama,
+                fecha_ingreso: new Date().toISOString(),
+                medico_solicitante: 'Dr. Dev (Simulacion M6)',
+            };
+            if (habitacion) payload.habitacion = habitacion;
+            if (idEpField) payload.id_episodio = parseInt(idEpField);
+            logToConsole(`POST /api/v1/internacion/ingreso — Payload: ${JSON.stringify(payload)}`, 'sent');
+            try {
+                const res = await fetch('/api/v1/internacion/ingreso', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${devToken}` },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    logToConsole(`201 OK — Ingreso registrado. ${JSON.stringify(data.data)}`, 'success');
+                    if (m6EpisodioId) await cargarSolicitudesM6();
+                } else { logToConsole(`${res.status} Error: ${JSON.stringify(data.detail || data)}`, 'error'); }
+            } catch (e) { logToConsole(`Error: ${e.message}`, 'error'); }
         }
 
         // Init page
