@@ -258,3 +258,87 @@ async def test_listar_ordenes_paciente(
     )
     assert response_forbidden.status_code == 403
 
+
+@pytest.mark.asyncio
+async def test_obtener_resultado_orden(
+    client: AsyncClient,
+    db: AsyncSession,
+    auth_headers: dict,
+):
+    from datetime import datetime
+
+    # 1. Crear un paciente de prueba
+    paciente_id = 30500
+    paciente = Paciente(id_paciente=paciente_id, datos_personales={"nombre": "Carlos Gómez"})
+    db.add(paciente)
+    await db.commit()
+
+    # 2. Crear una orden de Imagen
+    orden_img = Orden(
+        id_paciente=paciente_id,
+        tipo_estudio="Imagen",
+        descripcion_pedido="Radiografía de tórax",
+        prioridad="Normal",
+        estado="Finalizado",
+        id_medico_solicitante=101,
+        subtipo="RADIOLOGY",
+    )
+    db.add(orden_img)
+    await db.commit()
+
+    # 3. Crear el resultado de Imagen asociado
+    resultado_img = ResultadoImagen(
+        id_orden=orden_img.id_orden,
+        id_paciente=paciente_id,
+        id_profesional_firmante="Dr. Perez",
+        fecha_resultado=datetime.utcnow(),
+        titulo="Resultado RX Tórax",
+        informe_resumen="Tórax normal, sin particularidades.",
+        subtipo="RADIOLOGY",
+        link_imagen="https://pacs.hospital/study/rx-123",
+        url_detalle="https://api.imagenes.hospital/v1/estudios/rx-123",
+    )
+    db.add(resultado_img)
+    await db.commit()
+
+    # 4. Consultar resultado de la orden de Imagen (Éxito)
+    response = await client.get(
+        f"/api/v1/ordenes/{orden_img.id_orden}/resultado?tipo_estudio=Imagen",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["tipo_estudio"] == "Imagen"
+    assert data["id_orden"] == orden_img.id_orden
+    assert data["titulo"] == "Resultado RX Tórax"
+    assert data["link_imagen"] == "https://pacs.hospital/study/rx-123"
+
+    # 5. Consultar resultado inexistente (404)
+    response_404 = await client.get(
+        f"/api/v1/ordenes/99999/resultado?tipo_estudio=Imagen",
+        headers=auth_headers,
+    )
+    assert response_404.status_code == 404
+
+    # 6. Probar sin token de autenticación (401)
+    response_unauth = await client.get(
+        f"/api/v1/ordenes/{orden_img.id_orden}/resultado?tipo_estudio=Imagen"
+    )
+    assert response_unauth.status_code == 401
+
+    # 7. Probar con token sin los permisos requeridos (403)
+    login_req_no_perm = DevLoginRequest(
+        sub=102,
+        sede_id=1,
+        permissions=["hce:pacientes:read"],  # No tiene hce:resultados:read
+    )
+    token_res_no_perm = generate_dev_token(login_req_no_perm)
+    bad_headers = {"Authorization": f"Bearer {token_res_no_perm.access_token}"}
+    
+    response_forbidden = await client.get(
+        f"/api/v1/ordenes/{orden_img.id_orden}/resultado?tipo_estudio=Imagen",
+        headers=bad_headers,
+    )
+    assert response_forbidden.status_code == 403
+
+

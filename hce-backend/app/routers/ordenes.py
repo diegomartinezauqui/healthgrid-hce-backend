@@ -20,7 +20,8 @@ from app.schemas.orden import (
     OrdenImagenCreate,
 )
 from common.enums.enums_orden import TipoEstudio
-from app.services import orden_service
+from app.services import orden_service, resultado_service
+from app.schemas.resultado import ResultadoEstudioResumen
 
 router = APIRouter()
 
@@ -119,6 +120,37 @@ async def obtener_orden(
             for a in alertas
         ],
     )
+
+
+@router.get(
+    "/ordenes/{id_orden}/resultado",
+    response_model=ResultadoEstudioResumen,
+    summary="Obtener resultado de una orden por su ID y tipo",
+    description=(
+        "Permite recuperar el resultado clínico (analitos o informe PACS) "
+        "asociado a una orden médica en base a su ID y el tipo de estudio."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def obtener_resultado_orden(
+    id_orden: int,
+    tipo_estudio: TipoEstudio,
+    db: DbSession,
+    _user=Depends(require_permission("hce:resultados:read")),
+):
+    resultado = await resultado_service.get_resultado_by_orden(
+        db, id_orden=id_orden, tipo_estudio=tipo_estudio
+    )
+    if not resultado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "El resultado para la orden especificada no fue encontrado."},
+        )
+    return resultado
 
 
 @router.get(

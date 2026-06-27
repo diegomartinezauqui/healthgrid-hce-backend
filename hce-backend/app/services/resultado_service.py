@@ -1,12 +1,14 @@
 """Servicio de resultados de estudios — lógica para M4/M5 → HCE."""
 
 import logging
+from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.resultado import ResultadoLaboratorio, ResultadoImagen
 from app.models.orden import Orden
 from app.schemas.resultado import ResultadoEstudioRequest, ResultadoLaboratorioWebhook, ResultadoEstudioResumen
+from common.enums.enums_orden import TipoEstudio
 
 logger = logging.getLogger(__name__)
 
@@ -137,3 +139,52 @@ async def get_resultados_paciente(
     # Ordenar por fecha desc
     unificados.sort(key=lambda x: x.fecha_resultado, reverse=True)
     return unificados
+
+
+async def get_resultado_by_orden(
+    db: AsyncSession,
+    id_orden: int,
+    tipo_estudio: TipoEstudio,
+) -> Optional[ResultadoEstudioResumen]:
+    """Obtener el resultado unificado de una orden específica según su tipo."""
+    if tipo_estudio == TipoEstudio.LABORATORIO:
+        query = select(ResultadoLaboratorio).where(ResultadoLaboratorio.id_orden == id_orden)
+        result = await db.execute(query)
+        l = result.scalar_one_or_none()
+        if not l:
+            return None
+        return ResultadoEstudioResumen(
+            id_resultado=l.id_resultado_laboratorio,
+            id_orden=l.id_orden,
+            tipo_estudio="Laboratorio",
+            fecha_resultado=l.fecha_resultado,
+            titulo="Resultado de Análisis de Laboratorio",
+            resumen=l.informe_resumen,
+            profesional_firmante=l.id_profesional_firmante,
+            subtipo=None,
+            link_imagen=None,
+            url_detalle=None,
+            analitos=l.analitos,
+            resumen_analitos=l.resumen_analitos,
+        )
+    elif tipo_estudio == TipoEstudio.IMAGEN:
+        query = select(ResultadoImagen).where(ResultadoImagen.id_orden == id_orden)
+        result = await db.execute(query)
+        i = result.scalar_one_or_none()
+        if not i:
+            return None
+        return ResultadoEstudioResumen(
+            id_resultado=i.id_resultado_imagen,
+            id_orden=i.id_orden,
+            tipo_estudio="Imagen",
+            fecha_resultado=i.fecha_resultado,
+            titulo=i.titulo or "Resultado de Diagnóstico por Imagen",
+            resumen=i.informe_resumen,
+            profesional_firmante=i.id_profesional_firmante,
+            subtipo=i.subtipo,
+            link_imagen=i.link_imagen,
+            url_detalle=i.url_detalle,
+            analitos=None,
+            resumen_analitos=None,
+        )
+    return None
