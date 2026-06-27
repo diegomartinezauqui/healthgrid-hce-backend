@@ -1,9 +1,12 @@
 """Servicio de internación — lógica para M6 (Camas)."""
 
+from datetime import datetime
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.episodio import Episodio
 from app.models.movimiento_internacion import MovimientoInternacion
+from app.models.solicitud_cama import SolicitudCama
 from app.schemas.internacion import IngresoInternacionRequest
 
 
@@ -49,7 +52,21 @@ async def registrar_ingreso(
         db.add(episodio)
         await db.flush()  # Para obtener el id_episodio generado
 
-    # 2. Crear movimiento de internación
+    # 2. Buscar y cerrar la solicitud de cama pendiente para este episodio si existe
+    q_sol = await db.execute(
+        select(SolicitudCama).where(
+            SolicitudCama.id_episodio == episodio.id_episodio,
+            SolicitudCama.estado == "pendiente",
+        )
+    )
+    solicitud = q_sol.scalar_one_or_none()
+    if solicitud:
+        solicitud.estado = "aceptada"
+        solicitud.cama = data.cama
+        solicitud.habitacion = data.habitacion
+        solicitud.fecha_resolucion = datetime.utcnow()
+
+    # 3. Crear movimiento de internación
     movimiento = MovimientoInternacion(
         id_episodio=episodio.id_episodio,
         id_paciente=data.id_paciente,
@@ -61,6 +78,7 @@ async def registrar_ingreso(
     )
     db.add(movimiento)
     await db.flush()
+    await db.commit()
 
     return {
         "id_episodio": episodio.id_episodio,
