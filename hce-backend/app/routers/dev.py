@@ -284,8 +284,17 @@ async def dev_simulador():
                                 Crear Episodio
                             </button>
                         </div>
-                        <div id="m6-episodio-status" class="text-xs text-slate-500 font-mono">
-                            Sin episodio activo. Crea uno o ingresa el ID manualmente abajo.
+                        <div class="flex gap-3 items-end pt-2 border-t border-slate-800/50">
+                            <div class="flex-1">
+                                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">O Cargar ID de Episodio Existente</label>
+                                <input id="m6-id-episodio-existente" type="number" placeholder="Ej: 12" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500">
+                            </div>
+                            <button onclick="cargarEpisodioExistenteM6()" class="px-4 py-2 bg-slate-850 hover:bg-slate-750 border border-slate-700 text-white font-medium rounded-lg text-sm transition-all">
+                                Cargar Episodio
+                            </button>
+                        </div>
+                        <div id="m6-episodio-status" class="text-xs text-slate-500 font-mono mt-2">
+                            Sin episodio activo. Crea uno o carga uno existente arriba.
                         </div>
                     </div>
 
@@ -898,6 +907,22 @@ async def dev_simulador():
                 return;
             }
             await crearEpisodioM6();
+        }
+
+        async function cargarEpisodioExistenteM6() {
+            const idPaciente = parseInt(document.getElementById('m6-id-paciente').value) || 10500;
+            const idEpisodio = parseInt(document.getElementById('m6-id-episodio-existente').value);
+            if (!idEpisodio) {
+                alert('Ingresa un ID de episodio válido.');
+                return;
+            }
+            m6PacienteId = idPaciente;
+            m6EpisodioId = idEpisodio;
+            document.getElementById('m6-cb-id-episodio').value = m6EpisodioId;
+            document.getElementById('m6-episodio-status').innerHTML =
+                `<span class="text-indigo-400 font-semibold">Episodio #${m6EpisodioId} cargado</span> — Paciente ${idPaciente}`;
+            logToConsole(`Episodio #${m6EpisodioId} configurado manualmente. Listando solicitudes...`, 'success');
+            await cargarSolicitudesM6();
         }
 
         async function crearEpisodioM6() {
