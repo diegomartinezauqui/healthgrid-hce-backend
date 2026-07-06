@@ -5,9 +5,11 @@ from datetime import date, datetime, timezone
 from typing import Optional, Sequence
 from uuid import uuid4
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.acto_medico import ActoMedico
+from app.models.cobertura_medica import CoberturaMedica
 from app.models.episodio import Episodio
 from app.repositories.acto_medico_repository import acto_medico_repo
 from app.repositories.episodio_repository import episodio_repo
@@ -162,17 +164,36 @@ async def registrar_acto_medico(
     if episodio.estado == EstadoEpisodio.CLOSED:
         raise ValueError("No se pueden registrar actos médicos en un episodio cerrado.")
 
+    id_profesional_final = data.id_profesional or id_profesional_default
+    fecha_realizacion_final = data.fecha_realizacion or datetime.now(timezone.utc)
+
     acto = ActoMedico(
         id_episodio=id_episodio,
         codigo_nomenclador=data.codigo_nomenclador,
         descripcion=data.descripcion,
         tipo=data.tipo.value,  # Guardar el valor string del enum
-        id_profesional=data.id_profesional or id_profesional_default,
-        fecha_realizacion=data.fecha_realizacion or datetime.now(timezone.utc),
+        id_profesional=id_profesional_final,
+        fecha_realizacion=fecha_realizacion_final,
         cantidad=data.cantidad,
         observaciones=data.observaciones,
     )
-    return await acto_medico_repo.save(db, acto)
+    acto = await acto_medico_repo.save(db, acto)
+
+    # ── Notificar a M7 (Facturación) si el acto tiene código de nomenclador ──
+    # Solo actos con codigo_nomenclador son facturables. Se busca la cobertura
+    # vigente del paciente para obtener planId y número de afiliado.
+    # El error no bloquea: si M7 no está disponible el acto médico igual se guarda.
+    if acto.codigo_nomenclador:
+        await _notificar_m7(
+            db=db,
+            acto=acto,
+            id_paciente=id_paciente,
+            id_episodio=id_episodio,
+            id_profesional=id_profesional_final,
+            fecha_realizacion=fecha_realizacion_final,
+        )
+
+    return acto
 
 
 async def publicar_patologia_critica(
@@ -221,3 +242,62 @@ async def publicar_patologia_critica(
         codigo_patologia,
         id_episodio,
     )
+
+
+async def _notificar_m7(
+    db: AsyncSession,
+    acto: ActoMedico,
+    id_paciente: int,
+    id_episodio: int,
+    id_profesional: int,
+    fecha_realizacion: datetime,
+) -> None:
+    """
+    Busca la cobertura médica vigente del paciente y llama a m7_client
+    para registrar el acto como prestación facturable en M7.
+
+    Si M7 no está disponible o el paciente no tiene cobertura registrada,
+    se loguea el problema pero NO se lanza excepción: el acto médico
+    ya fue persistido y no debe verse afectado por fallas del módulo externo.
+    """
+    from app.services import m7_client
+
+    # Obtener cobertura vigente (la más reciente)
+    result = await db.execute(
+        select(CoberturaMedica)
+        .where(CoberturaMedica.id_paciente == id_paciente)
+        .order_by(CoberturaMedica.vigente_desde.desc())
+        .limit(1)
+    )
+    cobertura = result.scalar_one_or_none()
+
+    if not cobertura:
+        logger.warning(
+            "⚠️ [M7] Acto médico %s con código nomenclador registrado, "
+            "pero el paciente %s no tiene cobertura médica cargada. "
+            "No se notificó a Facturación.",
+            acto.id_acto_medico,
+            id_paciente,
+        )
+        return
+
+    try:
+        await m7_client.notificar_prestacion(
+            id_paciente=id_paciente,
+            id_episodio=id_episodio,
+            id_acto_medico=acto.id_acto_medico,
+            id_profesional=id_profesional,
+            plan_id=cobertura.id_obra_social,
+            codigo_prestacion=acto.codigo_nomenclador,
+            numero_afiliado=cobertura.numero_afiliado,
+            fecha_atencion=fecha_realizacion.isoformat(),
+            cantidad=acto.cantidad,
+            observaciones=acto.observaciones,
+        )
+    except RuntimeError as exc:
+        # M7 no disponible o rechazó la llamada — se loguea, no bloquea
+        logger.error(
+            "❌ [M7] No se pudo notificar la prestación del acto %s a Facturación: %s",
+            acto.id_acto_medico,
+            exc,
+        )
