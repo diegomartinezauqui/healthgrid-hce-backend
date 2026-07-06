@@ -167,11 +167,11 @@ async def dev_simulador():
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Sede Médica</label>
-                            <input id="m2-sede" type="number" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" value="1">
+                            <input id="m2-sede" type="number" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" value="3">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ID del Médico</label>
-                            <input id="m2-medico" type="number" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" value="1">
+                            <input id="m2-medico" type="number" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-white font-mono text-sm focus:outline-none focus:border-indigo-500" value="42">
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">ID Turno (Opcional)</label>
@@ -192,9 +192,14 @@ async def dev_simulador():
                         </div>
                     </div>
 
-                    <button onclick="admitirSalaEspera()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium rounded-lg text-sm transition-all shadow-lg shadow-indigo-600/10 active:scale-[0.99]">
-                        Registrar Presentismo en Sala de Espera
-                    </button>
+                    <div class="flex gap-4">
+                        <button onclick="admitirSalaEspera()" class="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-medium rounded-lg text-sm transition-all shadow-lg shadow-indigo-600/10 active:scale-[0.99]">
+                            Registrar Presentismo en Sala de Espera
+                        </button>
+                        <button onclick="seedSalaEspera()" class="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium rounded-lg text-sm transition-all active:scale-[0.99]">
+                            🪄 Insertar Pacientes de Prueba
+                        </button>
+                    </div>
                 </section>
 
                 <!-- TAB M3: Farmacia (Recetas) -->
@@ -456,6 +461,66 @@ async def dev_simulador():
             } catch (e) {
                 logToConsole(`❌ Error de red al autenticar: ${e.message}`, 'error');
             }
+        }
+
+        // M2 Seed Dummy Patients
+        async function seedSalaEspera() {
+            const sedeId = parseInt(document.getElementById('m2-sede').value) || 3;
+            const medicoId = parseInt(document.getElementById('m2-medico').value) || 42;
+
+            const pacientesDePrueba = [
+                { id: 1001, nombre: "Ana", apellido: "García", sexo: "F" },
+                { id: 1002, nombre: "Carlos", apellido: "López", sexo: "M" },
+                { id: 1003, nombre: "María", apellido: "Martínez", sexo: "F" }
+            ];
+
+            logToConsole(`🪄 Iniciando carga de pacientes para Medico ${medicoId} en Sede ${sedeId}...`, 'info');
+
+            for (const p of pacientesDePrueba) {
+                try {
+                    // 1. Crear el paciente en la BD local de desarrollo
+                    const resPaciente = await fetch(`${apiPrefix}/dev/paciente?id_paciente=${p.id}`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${devToken}` }
+                    });
+                    
+                    if (!resPaciente.ok) {
+                        logToConsole(`❌ Error creando paciente ${p.id}`, 'error');
+                        continue;
+                    }
+
+                    // 2. Ingresarlo a sala de espera
+                    const payload = {
+                        id_paciente: p.id,
+                        id_sede: sedeId,
+                        id_medico: medicoId,
+                        tipo_atencion: "guardia"
+                    };
+                    
+                    const resIngreso = await fetch(`${apiPrefix}/sala-espera/ingreso`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${devToken}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (resIngreso.ok) {
+                        logToConsole(`✅ Paciente ${p.nombre} ${p.apellido} (ID: ${p.id}) ingresado a sala de espera.`, 'success');
+                    } else {
+                        const errorData = await resIngreso.json();
+                        if (errorData.detail && errorData.detail.message && errorData.detail.message.includes('ya se encuentra')) {
+                            logToConsole(`⚠️ El paciente ${p.id} ya está en la sala de espera.`, 'info');
+                        } else {
+                            logToConsole(`❌ Error ingresando paciente ${p.id}`, 'error');
+                        }
+                    }
+                } catch (e) {
+                    logToConsole(`❌ Error de red con paciente ${p.id}: ${e.message}`, 'error');
+                }
+            }
+            logToConsole('🎉 Carga de prueba finalizada.', 'success');
         }
 
         // M2 Admit Patient
