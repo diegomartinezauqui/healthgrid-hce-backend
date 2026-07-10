@@ -49,9 +49,9 @@ async def historial_recetas(
             id_receta=r.id_receta,
             id_paciente=r.id_paciente,
             id_evolucion=r.id_evolucion,
-            medicamento=r.medicamento,
-            indicaciones=r.indicaciones,
             estado=r.estado,
+            fecha_creacion=r.fecha_creacion,
+            items=r.items,
             alertas_clinicas=alertas_schema,
         )
         for r in recetas

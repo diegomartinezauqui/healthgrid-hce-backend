@@ -58,6 +58,7 @@ async def listar_recetas(
                 id_paciente=receta.id_paciente,
                 id_evolucion=receta.id_evolucion,
                 estado=receta.estado,
+                fecha_creacion=receta.fecha_creacion,
                 items=receta.items,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
@@ -105,6 +106,7 @@ async def obtener_receta(
         id_paciente=receta.id_paciente,
         id_evolucion=receta.id_evolucion,
         estado=receta.estado,
+        fecha_creacion=receta.fecha_creacion,
         items=receta.items,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
@@ -161,6 +163,7 @@ async def registrar_receta(
             id_paciente=receta.id_paciente,
             id_evolucion=receta.id_evolucion,
             estado=receta.estado,
+            fecha_creacion=receta.fecha_creacion,
             items=receta.items,
             alertas_clinicas=[
                 AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
@@ -214,6 +217,7 @@ async def dispensar_receta(
             id_paciente=receta.id_paciente,
             id_evolucion=receta.id_evolucion,
             estado=receta.estado,
+            fecha_creacion=receta.fecha_creacion,
             items=receta.items,
             alertas_clinicas=[
                 AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)

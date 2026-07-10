@@ -41,7 +41,8 @@ class RecetaRepository(BaseRepository[Receta, RecetaCreate]):
             query = query.where(Receta.estado == estado)
         if id_paciente:
             query = query.where(Receta.id_paciente == id_paciente)
-        # Nota: La tabla recetas actual no tiene fecha. Si tuviera, filtraríamos por desde_fecha aquí.
+        if desde_fecha:
+            query = query.where(Receta.fecha_creacion >= desde_fecha)
 
         result = await db.execute(query)
         return list(result.scalars().all())
