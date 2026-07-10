@@ -28,6 +28,8 @@ from app.routers import (
     recetas,
     resultados,
     sala_espera,
+    solicitudes_cama,
+    webhooks,
 )
 
 
@@ -38,7 +40,7 @@ async def lifespan(app: FastAPI):
     Aquí se podrían inicializar conexiones a Kafka, caches, etc.
     """
     # ── Startup ──
-    print("🏥 HCE Module starting up...")
+    print("HCE Module starting up...")
     consumer_task = None
     if settings.ENABLE_KAFKA:
         await kafka_producer.start()
@@ -46,9 +48,19 @@ async def lifespan(app: FastAPI):
     else:
         print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
 
+    # Bus de eventos del Core (modelo real: RabbitMQ + POST /events/log).
+    if settings.ENABLE_CORE_BUS:
+        from app.integrations.rabbit_consumer import start_core_bus_consumer
+        asyncio.create_task(start_core_bus_consumer())
+    else:
+        # Modelo viejo (suscripción HTTP a /events/subscriptions): el Core indicó
+        # que esos métodos son internos, así que sólo se usa si el bus está apagado.
+        from app.services.core_subscription import registrar_suscripciones_core
+        asyncio.create_task(registrar_suscripciones_core())
+
     yield
     # ── Shutdown ──
-    print("🥞 HCE Module shutting down...")
+    print("HCE Module shutting down...")
     if consumer_task is not None and not consumer_task.done():
         consumer_task.cancel()
         try:
@@ -96,9 +108,11 @@ app.include_router(recetas.router, prefix=API_PREFIX, tags=["Atención Clínica 
 app.include_router(sala_espera.router, prefix=API_PREFIX, tags=["Atención Clínica — Sala de Espera"])
 app.include_router(health.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
 app.include_router(core_integration.router, prefix=API_PREFIX, tags=["Integración M10 (Core)"])
-app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
-app.include_router(resultados.router, prefix=API_PREFIX, tags=["Integración M4/M5 (Estudios)"])
+app.include_router(ordenes.router, prefix=API_PREFIX, tags=["Atención Clínica — Órdenes Médicas"])
+app.include_router(resultados.router, prefix=API_PREFIX, tags=["Atención Clínica — Órdenes Médicas"])
 app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6 (Camas)"])
+app.include_router(solicitudes_cama.router, prefix=API_PREFIX)
+app.include_router(webhooks.router, prefix=API_PREFIX)
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
 

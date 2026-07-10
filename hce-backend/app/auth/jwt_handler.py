@@ -57,12 +57,47 @@ async def get_current_user_from_token(
 ) -> CurrentUser:
     """
     Dependency de FastAPI que extrae y valida el JWT del header Authorization.
+    Acepta dos tipos de token:
+      - HS256 interno (POST /api/v1/dev/login) — validado con la clave compartida.
+      - RS256 del Core (SSO) — validado con el JWKS público del Core.
     Retorna un CurrentUser con los datos del payload.
-
-    En desarrollo, usar el endpoint POST /api/v1/dev/login para obtener un token.
     """
-    payload = decode_jwt(credentials.credentials)
+    token = credentials.credentials
 
+    # Detectamos el algoritmo por el header (sin verificar todavía).
+    try:
+        alg = jwt.get_unverified_header(token).get("alg", "")
+    except JWTError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"error": "UNAUTHORIZED", "message": "Token JWT malformado."},
+        )
+
+    # ── Token del Core (SSO) ──
+    if alg == "RS256":
+        from app.auth.jwks import decode_core_jwt
+
+        payload = await decode_core_jwt(token)
+        user_id = payload.get("user_id", payload.get("sub"))
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail={"error": "UNAUTHORIZED", "message": "El token del Core no trae user_id."},
+            )
+        permisos = list(payload.get("permissions", []))
+        # El Core aún no emite claims hce:*; otorgamos el set HCE completo.
+        if settings.SSO_GRANT_FULL_HCE:
+            permisos = sorted(set(permisos) | set(settings.hce_permissions))
+        return CurrentUser(
+            sub=int(user_id),
+            username=str(payload.get("email", payload.get("username", ""))),
+            role=payload.get("role", "medico"),
+            permissions=permisos,
+            sede_id=int(payload.get("sedeId", settings.DEV_AUTH_SEDE_ID)),
+        )
+
+    # ── Token interno HS256 ──
+    payload = decode_jwt(token)
     try:
         return CurrentUser(
             sub=int(payload["sub"]),

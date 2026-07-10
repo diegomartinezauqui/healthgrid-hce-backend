@@ -82,6 +82,8 @@ async def test_crear_receta_master_detail(client: AsyncClient, db: AsyncSession,
     assert res_receta.status_code == 201
     data = res_receta.json()
     assert "id_receta" in data
+    assert "fecha_creacion" in data
+    assert data["fecha_creacion"] is not None
     assert len(data["items"]) == 2
     assert data["items"][0]["medicamento"] == "Amoxicilina 500mg"
     assert data["items"][1]["medicamento"] == "Ibuprofeno 400mg"
@@ -96,6 +98,7 @@ async def test_crear_receta_master_detail(client: AsyncClient, db: AsyncSession,
     
     receta_farmacia = next((r for r in recetas_list if r["id_receta"] == id_receta), None)
     assert receta_farmacia is not None
+    assert "fecha_creacion" in receta_farmacia
     assert len(receta_farmacia["items"]) == 2
 
     # 5. Dispensar la receta a través del endpoint PATCH /recetas/{id_receta}/dispensar

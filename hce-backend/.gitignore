@@ -8,6 +8,4 @@ skills-lock.json
 .env.example
 *.db
 .pytest_cache/
-frontend_integration_guide.md
 seed_dev_data.sql
-backend_integration_todo.md

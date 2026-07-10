@@ -1,5 +1,6 @@
 """Schemas de recetas médicas (Integración M3 Farmacia)."""
 
+from datetime import datetime
 from typing import List, Optional
 
 from pydantic import BaseModel, Field
@@ -44,6 +45,7 @@ class RecetaMedicaDetallada(BaseModel):
     id_paciente: int = Field(..., examples=[10500])
     id_evolucion: Optional[int] = Field(None, examples=[302])
     estado: EstadoReceta = Field(..., examples=["Activa"])
+    fecha_creacion: datetime = Field(..., examples=["2026-06-25T14:30:00Z"])
     items: List[ItemRecetaSchema] = Field(default_factory=list)
     alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 

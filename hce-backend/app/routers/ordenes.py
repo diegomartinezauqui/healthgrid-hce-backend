@@ -16,8 +16,12 @@ from app.schemas.orden import (
     OrdenCreatedResponse,
     OrdenListResponse,
     OrdenMedicaCompleta,
+    OrdenLaboratorioCreate,
+    OrdenImagenCreate,
 )
-from app.services import orden_service
+from common.enums.enums_orden import TipoEstudio, OrigenOrden
+from app.services import orden_service, resultado_service
+from app.schemas.resultado import ResultadoEstudioResumen
 
 router = APIRouter()
 
@@ -53,6 +57,14 @@ async def listar_ordenes(
                 tipo_estudio=orden.tipo_estudio,
                 descripcion_pedido=orden.descripcion_pedido,
                 prioridad=orden.prioridad,
+                id_episodio=orden.id_episodio,
+                id_evolucion=orden.id_evolucion,
+                fecha_creacion=orden.fecha_creacion,
+                id_medico_solicitante=orden.id_medico_solicitante,
+                subtipo=orden.subtipo,
+                estudio_ids=orden.estudio_ids,
+                estado=orden.estado,
+                origen=orden.origen,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -97,6 +109,14 @@ async def obtener_orden(
         tipo_estudio=orden.tipo_estudio,
         descripcion_pedido=orden.descripcion_pedido,
         prioridad=orden.prioridad,
+        id_episodio=orden.id_episodio,
+        id_evolucion=orden.id_evolucion,
+        fecha_creacion=orden.fecha_creacion,
+        id_medico_solicitante=orden.id_medico_solicitante,
+        subtipo=orden.subtipo,
+        estudio_ids=orden.estudio_ids,
+        estado=orden.estado,
+        origen=orden.origen,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
@@ -104,8 +124,85 @@ async def obtener_orden(
     )
 
 
+@router.get(
+    "/ordenes/{id_orden}/resultado",
+    response_model=ResultadoEstudioResumen,
+    summary="Obtener resultado de una orden por su ID y tipo",
+    description=(
+        "Permite recuperar el resultado clínico (analitos o informe PACS) "
+        "asociado a una orden médica en base a su ID y el tipo de estudio."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def obtener_resultado_orden(
+    id_orden: int,
+    tipo_estudio: TipoEstudio,
+    db: DbSession,
+    _user=Depends(require_permission("hce:resultados:read")),
+):
+    resultado = await resultado_service.get_resultado_by_orden(
+        db, id_orden=id_orden, tipo_estudio=tipo_estudio
+    )
+    if not resultado:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": "El resultado para la orden especificada no fue encontrado."},
+        )
+    return resultado
+
+
+@router.get(
+    "/pacientes/{id_paciente}/ordenes",
+    response_model=OrdenListResponse,
+    summary="Listar órdenes de un paciente",
+    description="Retorna todas las órdenes médicas (bioquímicas y de imágenes) de un paciente.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+    },
+)
+async def listar_ordenes_paciente(
+    id_paciente: int,
+    db: DbSession,
+    _user=Depends(require_permission("hce:ordenes:read")),
+):
+    ordenes = await orden_service.get_ordenes_paciente(db, id_paciente=id_paciente)
+
+    data = []
+    for orden in ordenes:
+        alertas = await orden_service.get_alertas_clinicas_paciente(db, orden.id_paciente)
+        data.append(
+            OrdenMedicaCompleta(
+                id_orden=orden.id_orden,
+                id_paciente=orden.id_paciente,
+                tipo_estudio=orden.tipo_estudio,
+                descripcion_pedido=orden.descripcion_pedido,
+                prioridad=orden.prioridad,
+                id_episodio=orden.id_episodio,
+                id_evolucion=orden.id_evolucion,
+                fecha_creacion=orden.fecha_creacion,
+                id_medico_solicitante=orden.id_medico_solicitante,
+                subtipo=orden.subtipo,
+                estudio_ids=orden.estudio_ids,
+                estado=orden.estado,
+                origen=orden.origen,
+                alertas_clinicas=[
+                    AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
+                    for a in alertas
+                ],
+            )
+        )
+
+    return OrdenListResponse(status="success", cantidad=len(data), data=data)
+
+
 @router.post(
     "/pacientes/{id_paciente}/ordenes",
+    deprecated=True,
     response_model=OrdenCreatedResponse,
     status_code=status.HTTP_201_CREATED,
     summary="Crear orden médica de estudio",
@@ -128,15 +225,119 @@ async def crear_orden(
     db: DbSession,
     _user=Depends(require_permission("hce:ordenes:write")),
 ):
-    orden = await orden_service.crear_orden(
-        db,
-        id_paciente=id_paciente,
-        tipo_estudio=body.tipo_estudio,
-        descripcion_pedido=body.descripcion_pedido,
-        prioridad=body.prioridad,
-    )
-    return OrdenCreatedResponse(
-        status="success",
-        message="Orden creada y evento Kafka publicado.",
-        id_orden=orden.id_orden,
-    )
+    try:
+        orden = await orden_service.crear_orden(
+            db,
+            id_paciente=id_paciente,
+            tipo_estudio=body.tipo_estudio,
+            descripcion_pedido=body.descripcion_pedido,
+            prioridad=body.prioridad,
+            id_episodio=body.id_episodio,
+            id_evolucion=body.id_evolucion,
+            id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
+            origen=body.origen,
+        )
+        return OrdenCreatedResponse(
+            status="success",
+            message="Orden creada y evento Kafka publicado.",
+            id_orden=orden.id_orden,
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(e)},
+        )
+
+
+@router.post(
+    "/pacientes/{id_paciente}/ordenes/laboratorio",
+    response_model=OrdenCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear orden médica de laboratorio (M4)",
+    description=(
+        "Crea una orden de laboratorio vinculando una lista de IDs de estudios del catálogo de M4. "
+        "Notifica de forma asíncrona a M4 mediante HTTP y publica el evento en Kafka."
+    ),
+    responses={
+        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
+        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
+        404: {"model": ErrorResponse, "description": "Paciente no encontrado."},
+        422: {"model": ErrorResponse, "description": "Datos inválidos."},
+    },
+)
+async def crear_orden_laboratorio(
+    id_paciente: int,
+    body: OrdenLaboratorioCreate,
+    db: DbSession,
+    _user=Depends(require_permission("hce:ordenes:write")),
+):
+    try:
+        orden = await orden_service.crear_orden(
+            db,
+            id_paciente=id_paciente,
+            tipo_estudio=TipoEstudio.LABORATORIO,
+            descripcion_pedido=body.descripcion_pedido,
+            prioridad=body.prioridad,
+            id_episodio=body.id_episodio,
+            id_evolucion=body.id_evolucion,
+            id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
+            estudio_ids=body.estudio_ids,
+            origen=body.origen,
+        )
+        return OrdenCreatedResponse(
+            status="success",
+            message="Orden de laboratorio creada y notificada a M4.",
+            id_orden=orden.id_orden,
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(e)},
+        )
+
+
+@router.post(
+    "/pacientes/{id_paciente}/ordenes/imagenes",
+    response_model=OrdenCreatedResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear orden médica de imágenes diagnósticas (M5)",
+    description=(
+        "Crea una orden de diagnóstico por imágenes especificando la modalidad (subtipo). "
+        "Notifica de forma asíncrona a M5 mediante HTTP y publica el evento en Kafka."
+    ),
+    responses={
+        401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
+        403: {"model": ErrorResponse, "description": "Sin permiso requerido."},
+        404: {"model": ErrorResponse, "description": "Paciente no encontrado."},
+        422: {"model": ErrorResponse, "description": "Datos inválidos."},
+    },
+)
+async def crear_orden_imagenes(
+    id_paciente: int,
+    body: OrdenImagenCreate,
+    db: DbSession,
+    _user=Depends(require_permission("hce:ordenes:write")),
+):
+    try:
+        orden = await orden_service.crear_orden(
+            db,
+            id_paciente=id_paciente,
+            tipo_estudio=TipoEstudio.IMAGEN,
+            descripcion_pedido=body.descripcion_pedido,
+            prioridad=body.prioridad,
+            id_episodio=body.id_episodio,
+            id_evolucion=body.id_evolucion,
+            id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
+            subtipo=body.subtipo,
+            origen=body.origen,
+        )
+        return OrdenCreatedResponse(
+            status="success",
+            message="Orden de imágenes creada y notificada a M5.",
+            id_orden=orden.id_orden,
+        )
+    except LookupError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(e)},
+        )

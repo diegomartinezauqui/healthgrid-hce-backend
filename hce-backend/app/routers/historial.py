@@ -49,9 +49,9 @@ async def historial_recetas(
             id_receta=r.id_receta,
             id_paciente=r.id_paciente,
             id_evolucion=r.id_evolucion,
-            medicamento=r.medicamento,
-            indicaciones=r.indicaciones,
             estado=r.estado,
+            fecha_creacion=r.fecha_creacion,
+            items=r.items,
             alertas_clinicas=alertas_schema,
         )
         for r in recetas
@@ -78,15 +78,4 @@ async def historial_resultados(
     _user=Depends(require_permission("hce:resultados:read")),
 ):
     resultados = await resultado_service.get_resultados_paciente(db, id_paciente)
-
-    return [
-        ResultadoEstudioResumen(
-            id_resultado=r.id_resultado,
-            tipo_estudio=r.tipo_estudio,
-            fecha_resultado=r.fecha_resultado,
-            titulo=r.titulo,
-            resumen=r.resumen,
-            profesional_firmante=r.id_profesional_firmante,
-        )
-        for r in resultados
-    ]
+    return resultados

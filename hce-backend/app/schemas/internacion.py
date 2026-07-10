@@ -12,6 +12,15 @@ class IngresoInternacionRequest(BaseModel):
     """Payload enviado por M6 para notificar ingreso de paciente a cama."""
 
     id_paciente: int = Field(..., examples=[10500])
+    id_episodio: Optional[int] = Field(
+        None,
+        examples=[700],
+        description=(
+            "Episodio de HCE que originó la solicitud. Si se envía, ese mismo "
+            "episodio pasa a internación (no se crea uno nuevo). M6 debe reenviar "
+            "el id_episodio que recibió en la solicitud."
+        ),
+    )
     sector: str = Field(..., examples=["UTI"])
     habitacion: Optional[str] = Field(None, examples=["Terapia A"])
     cama: str = Field(..., examples=["Cama 4"])
@@ -23,6 +32,15 @@ class SolicitudInternacionRequest(BaseModel):
     """Payload enviado por HCE hacia M6 para solicitar internación."""
 
     id_paciente: int = Field(..., examples=[10500])
+    id_episodio: Optional[int] = Field(
+        None,
+        examples=[700],
+        description=(
+            "Episodio ambulatorio que origina la internación. M6 debe reenviarlo "
+            "en el callback /internacion/ingreso para que ese mismo episodio pase "
+            "a internación."
+        ),
+    )
     id_evolucion_origen: int = Field(..., examples=[302])
     prioridad: PrioridadInternacion = Field(..., examples=["Alta"])
     sector_solicitado: SectorSolicitado = Field(..., examples=["UTI"])

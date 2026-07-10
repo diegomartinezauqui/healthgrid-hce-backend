@@ -11,7 +11,7 @@ from app.models.orden import Orden
 from app.repositories.alerta_repository import alerta_repo
 from app.schemas.kafka_events import EventoKafkaNuevaOrden
 from app.services.kafka_producer import kafka_producer, TOPIC_ORDEN_CREADA
-from common.enums.enums_orden import TipoEstudio, PrioridadOrden
+from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio, OrigenOrden
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,16 @@ async def get_ordenes(
     if estado:
         query = query.where(Orden.estado == estado)
 
+    result = await db.execute(query)
+    return list(result.scalars().all())
+
+
+async def get_ordenes_paciente(
+    db: AsyncSession,
+    id_paciente: int,
+) -> list[Orden]:
+    """Obtener listado de todas las órdenes de un paciente."""
+    query = select(Orden).where(Orden.id_paciente == id_paciente).order_by(Orden.fecha_creacion.desc())
     result = await db.execute(query)
     return list(result.scalars().all())
 
@@ -50,27 +60,42 @@ async def crear_orden(
     tipo_estudio: TipoEstudio,
     descripcion_pedido: Optional[str] = None,
     prioridad: PrioridadOrden = PrioridadOrden.NORMAL,
+    id_episodio: Optional[int] = None,
+    id_evolucion: Optional[int] = None,
+    id_medico_solicitante: Optional[int] = None,
+    estudio_ids: Optional[list[int]] = None,
+    subtipo: Optional[SubtipoEstudio] = None,
+    origen: Optional[OrigenOrden] = OrigenOrden.AMBULATORIO,
 ) -> Orden:
     """
     Crear una nueva orden médica de estudio y publicar el evento Kafka
     clinica.estudios.orden_creada para que M4 (Laboratorio) y M5 (Imágenes) la procesen.
-
-    Args:
-        db: Sesión de base de datos.
-        id_paciente: ID del paciente.
-        tipo_estudio: Tipo de estudio (Laboratorio, Imagen, Anatomia_Patologica).
-        descripcion_pedido: Descripción del estudio requerido (opcional).
-        prioridad: Prioridad de la orden (Normal, Urgente, Emergencia).
-
-    Returns:
-        Orden recién creada y persistida.
     """
+    from app.models.paciente import Paciente
+    # Obtener paciente para extraer datos reales (necesarios para el contrato de M4)
+    result_p = await db.execute(select(Paciente).where(Paciente.id_paciente == id_paciente))
+    paciente = result_p.scalar_one_or_none()
+    if not paciente:
+        raise LookupError(f"Paciente con ID {id_paciente} no encontrado.")
+
+    datos = paciente.datos_personales or {}
+    paciente_nombre = datos.get("nombre", "Paciente Desconocido")
+    paciente_dni = datos.get("dni", "12345678")
+    paciente_edad = datos.get("edad", 30)
+    paciente_sexo = datos.get("sexo", "M")
+
     orden = Orden(
         id_paciente=id_paciente,
         tipo_estudio=tipo_estudio,
         descripcion_pedido=descripcion_pedido,
         prioridad=prioridad,
         estado="Pendiente",
+        id_episodio=id_episodio,
+        id_evolucion=id_evolucion,
+        id_medico_solicitante=id_medico_solicitante,
+        subtipo=subtipo,
+        estudio_ids=estudio_ids,
+        origen=origen,
     )
     db.add(orden)
     await db.flush()  # Para obtener el id_orden generado
@@ -87,5 +112,47 @@ async def crear_orden(
         tipo_estudio.value,
         id_paciente,
     )
+
+    # Publicar también al bus del Core (RabbitMQ vía POST /events/log). Gateado:
+    # no-op si ENABLE_CORE_BUS=False o el event_type_id no está configurado.
+    try:
+        from app.integrations.core_bus import publish_named
+        await publish_named("orden.creada", {
+            "id_orden": orden.id_orden,
+            "id_orden_hce": orden.id_orden,
+            "id_paciente": id_paciente,
+            "tipo_estudio": tipo_estudio.value,
+            "descripcion": descripcion_pedido,
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("⚠️ No se pudo publicar orden.creada al bus del Core: %s", exc)
+
+    # Integración REST de salida con los módulos M4 y M5
+    import asyncio
+    from app.integrations import m4_client, m5_client
+    
+    if tipo_estudio == TipoEstudio.LABORATORIO:
+        asyncio.create_task(
+            m4_client.notificar_orden_laboratorio(
+                id_orden=orden.id_orden,
+                id_paciente=id_paciente,
+                paciente_nombre=paciente_nombre,
+                paciente_dni=paciente_dni,
+                paciente_edad=paciente_edad,
+                paciente_sexo=paciente_sexo,
+                medico_id=id_medico_solicitante or 1,
+                estudio_ids=estudio_ids or [],
+                prioridad=prioridad.value if hasattr(prioridad, "value") else str(prioridad),
+            )
+        )
+    elif tipo_estudio == TipoEstudio.IMAGEN:
+        asyncio.create_task(
+            m5_client.notificar_orden(
+                id_orden=orden.id_orden,
+                id_paciente=id_paciente,
+                descripcion=descripcion_pedido,
+                subtipo=subtipo.value if subtipo and hasattr(subtipo, "value") else str(subtipo) if subtipo else None,
+            )
+        )
 
     return orden

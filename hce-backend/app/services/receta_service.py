@@ -91,6 +91,17 @@ async def registrar_receta(
         id_paciente,
     )
 
+    # Publicar también al bus del Core (gateado; no-op si no está configurado).
+    try:
+        from app.integrations.core_bus import publish_named
+        await publish_named("receta.creada", {
+            "id_receta": nueva_receta.id_receta,
+            "id_paciente": id_paciente,
+            "tipo_paciente": tipo_paciente,
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("⚠️ No se pudo publicar receta.creada al bus del Core: %s", exc)
+
     return await receta_repo.get_receta_detallada(db, nueva_receta.id_receta)
 
 
