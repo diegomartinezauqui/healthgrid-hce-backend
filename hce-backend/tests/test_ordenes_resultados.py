@@ -65,6 +65,7 @@ async def test_flujo_completo_ordenes_y_resultados(
         "prioridad": "Urgente",
         "id_episodio": id_episodio,
         "id_evolucion": id_evolucion,
+        "origen": "Internacion",
     }
     res_orden_img = await client.post(
         "/api/v1/pacientes/10500/ordenes",
@@ -82,6 +83,15 @@ async def test_flujo_completo_ordenes_y_resultados(
     assert orden_img.id_evolucion == id_evolucion
     assert orden_img.estado == "Pendiente"
     assert orden_img.id_medico_solicitante == 101
+    assert orden_img.origen == "Internacion"
+
+    # Validar a través del endpoint de lectura GET /ordenes/{id}
+    res_get_orden = await client.get(
+        f"/api/v1/ordenes/{id_orden_img}",
+        headers=auth_headers,
+    )
+    assert res_get_orden.status_code == 200
+    assert res_get_orden.json()["origen"] == "Internacion"
 
     # 4. Registrar resultado de Imagen (Módulo 5)
     resultado_img_payload = {

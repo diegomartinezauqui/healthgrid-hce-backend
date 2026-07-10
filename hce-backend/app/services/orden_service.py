@@ -11,7 +11,7 @@ from app.models.orden import Orden
 from app.repositories.alerta_repository import alerta_repo
 from app.schemas.kafka_events import EventoKafkaNuevaOrden
 from app.services.kafka_producer import kafka_producer, TOPIC_ORDEN_CREADA
-from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio
+from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio, OrigenOrden
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +65,7 @@ async def crear_orden(
     id_medico_solicitante: Optional[int] = None,
     estudio_ids: Optional[list[int]] = None,
     subtipo: Optional[SubtipoEstudio] = None,
+    origen: Optional[OrigenOrden] = OrigenOrden.AMBULATORIO,
 ) -> Orden:
     """
     Crear una nueva orden médica de estudio y publicar el evento Kafka
@@ -94,6 +95,7 @@ async def crear_orden(
         id_medico_solicitante=id_medico_solicitante,
         subtipo=subtipo,
         estudio_ids=estudio_ids,
+        origen=origen,
     )
     db.add(orden)
     await db.flush()  # Para obtener el id_orden generado

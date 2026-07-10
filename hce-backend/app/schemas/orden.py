@@ -6,7 +6,7 @@ from typing import List, Optional
 from pydantic import BaseModel, Field
 
 from app.schemas.alerta import AlertaSmartPayload
-from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio
+from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio, OrigenOrden
 
 
 class OrdenCreate(BaseModel):
@@ -24,6 +24,7 @@ class OrdenCreate(BaseModel):
     )
     id_episodio: Optional[int] = Field(None, examples=[101])
     id_evolucion: Optional[int] = Field(None, examples=[202])
+    origen: Optional[OrigenOrden] = Field(default=OrigenOrden.AMBULATORIO, examples=["Ambulatorio"])
 
 
 class OrdenLaboratorioCreate(BaseModel):
@@ -34,6 +35,7 @@ class OrdenLaboratorioCreate(BaseModel):
     prioridad: PrioridadOrden = Field(default=PrioridadOrden.NORMAL, examples=["Normal"])
     id_episodio: Optional[int] = Field(None, examples=[101])
     id_evolucion: Optional[int] = Field(None, examples=[202])
+    origen: Optional[OrigenOrden] = Field(default=OrigenOrden.AMBULATORIO, examples=["Ambulatorio"])
 
 
 class OrdenImagenCreate(BaseModel):
@@ -44,6 +46,7 @@ class OrdenImagenCreate(BaseModel):
     prioridad: PrioridadOrden = Field(default=PrioridadOrden.NORMAL, examples=["Normal"])
     id_episodio: Optional[int] = Field(None, examples=[101])
     id_evolucion: Optional[int] = Field(None, examples=[202])
+    origen: Optional[OrigenOrden] = Field(default=OrigenOrden.AMBULATORIO, examples=["Ambulatorio"])
 
 
 class OrdenMedicaCompleta(BaseModel):
@@ -63,6 +66,7 @@ class OrdenMedicaCompleta(BaseModel):
     subtipo: Optional[SubtipoEstudio] = Field(None, examples=["RESONANCE"])
     estudio_ids: Optional[List[int]] = Field(None, examples=[[1, 2]])
     estado: str = Field(default="Pendiente", examples=["Pendiente"])
+    origen: Optional[OrigenOrden] = Field(default=OrigenOrden.AMBULATORIO, examples=["Ambulatorio"])
     alertas_clinicas: List[AlertaSmartPayload] = Field(default_factory=list)
 
     model_config = {"from_attributes": True}

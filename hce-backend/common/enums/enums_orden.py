@@ -21,3 +21,10 @@ class SubtipoEstudio(str, Enum):
     DENSITOMETRIA = "DENSITOMETRY"
     ECODOPPLER = "ECODOPPLER"
     ENDOSCOPIA = "ENDOSCOPY"
+
+
+class OrigenOrden(str, Enum):
+    INTERNACION = "Internacion"
+    AMBULATORIO = "Ambulatorio"
+    TURNO = "Turno"
+

@@ -19,7 +19,7 @@ from app.schemas.orden import (
     OrdenLaboratorioCreate,
     OrdenImagenCreate,
 )
-from common.enums.enums_orden import TipoEstudio
+from common.enums.enums_orden import TipoEstudio, OrigenOrden
 from app.services import orden_service, resultado_service
 from app.schemas.resultado import ResultadoEstudioResumen
 
@@ -64,6 +64,7 @@ async def listar_ordenes(
                 subtipo=orden.subtipo,
                 estudio_ids=orden.estudio_ids,
                 estado=orden.estado,
+                origen=orden.origen,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -115,6 +116,7 @@ async def obtener_orden(
         subtipo=orden.subtipo,
         estudio_ids=orden.estudio_ids,
         estado=orden.estado,
+        origen=orden.origen,
         alertas_clinicas=[
             AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
             for a in alertas
@@ -187,6 +189,7 @@ async def listar_ordenes_paciente(
                 subtipo=orden.subtipo,
                 estudio_ids=orden.estudio_ids,
                 estado=orden.estado,
+                origen=orden.origen,
                 alertas_clinicas=[
                     AlertaSmartPayload(tipo=a.tipo, severidad=a.severidad, descripcion=a.descripcion)
                     for a in alertas
@@ -232,6 +235,7 @@ async def crear_orden(
             id_episodio=body.id_episodio,
             id_evolucion=body.id_evolucion,
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
+            origen=body.origen,
         )
         return OrdenCreatedResponse(
             status="success",
@@ -278,6 +282,7 @@ async def crear_orden_laboratorio(
             id_evolucion=body.id_evolucion,
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
             estudio_ids=body.estudio_ids,
+            origen=body.origen,
         )
         return OrdenCreatedResponse(
             status="success",
@@ -324,6 +329,7 @@ async def crear_orden_imagenes(
             id_evolucion=body.id_evolucion,
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
             subtipo=body.subtipo,
+            origen=body.origen,
         )
         return OrdenCreatedResponse(
             status="success",

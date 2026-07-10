@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
-from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio
+from common.enums.enums_orden import TipoEstudio, PrioridadOrden, SubtipoEstudio, OrigenOrden
 
 
 class Orden(Base):
@@ -37,6 +37,11 @@ class Orden(Base):
     estudio_ids: Mapped[list | None] = mapped_column(
         JSON().with_variant(JSONB(), "postgresql"),
         nullable=True
+    )
+    origen: Mapped[OrigenOrden | None] = mapped_column(
+        Enum(OrigenOrden, name="origen_orden", values_callable=lambda x: [e.value for e in x]),
+        nullable=True,
+        default=OrigenOrden.AMBULATORIO,
     )
 
     # ─── Relaciones ───────────────────────────────────────────────
