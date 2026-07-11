@@ -22,6 +22,16 @@ class Settings(BaseSettings):
     JWT_SECRET_KEY: str = "super-secret-key-compartida-con-core"
     JWT_ALGORITHM: str = "HS256"
 
+    # ─── SSO / Core (M10) ─────────────────────────────────────────
+    # El Core emite JWT RS256 validados por su JWKS público. HCE los acepta
+    # además de los tokens HS256 internos (dev/login).
+    CORE_API_URL: str = "https://api.healthcare.cantero.ar"
+    CORE_JWKS_URL: str = ""  # si queda vacío se deriva de CORE_API_URL
+    # Los tokens del Core traen permisos globales (users:read, ...) y NO claims
+    # hce:*. Mientras el Core no emita permisos HCE, otorgamos el set completo
+    # a todo usuario autenticado vía SSO para que pueda operar el módulo.
+    SSO_GRANT_FULL_HCE: bool = True
+
     # ─── Kafka ────────────────────────────────────────────────────
     KAFKA_BOOTSTRAP_SERVERS: str = "localhost:9092"
 
@@ -32,6 +42,27 @@ class Settings(BaseSettings):
     M4_BASE_URL: str = "http://localhost:8004/api"
     HCE_PUBLIC_URL: str = "http://localhost:8000"
 
+    # ─── Bus de eventos del Core (RabbitMQ + POST /events/log) ────
+    # Modelo real del Core: se ESCUCHA por RabbitMQ y se PUBLICA vía el Core.
+    # Gateado: mientras ENABLE_CORE_BUS=False no se conecta a nada (listo para
+    # enchufar cuando lleguen las credenciales del Core).
+    ENABLE_CORE_BUS: bool = False
+    RABBITMQ_HOST: str = "localhost"
+    RABBITMQ_PORT: int = 5672
+    RABBITMQ_USER: str = ""
+    RABBITMQ_PASSWORD: str = ""
+    RABBITMQ_VHOST: str = "/"
+    # Cuenta de servicio de HCE para autenticarse al Core (POST /auth/login).
+    CORE_SERVICE_EMAIL: str = ""
+    CORE_SERVICE_PASSWORD: str = ""
+    # Nombre base de nuestras colas (el Core agrega .requests / .responses).
+    HCE_QUEUE_BASE: str = "hce"
+    # IDs de evento del Core (se completan tras crear los eventos con setup_core_bus.py).
+    # Mientras estén en 0 no se publica al bus (no-op).
+    CORE_EVENT_ORDEN_CREADA_ID: int = 0
+    CORE_EVENT_RECETA_CREADA_ID: int = 0
+    CORE_EVENT_EPISODIO_CERRADO_ID: int = 0
+    CORE_EVENT_PATOLOGIA_CRITICA_ID: int = 0
     # ─── Modo de integración con otros módulos ───────────────────
     # "mock" → los clients de salida loguean y devuelven respuestas canónicas
     #          (no hacen HTTP real). Webhooks de entrada siguen funcionando.
@@ -66,6 +97,14 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.APP_ENV == "production"
+
+    @property
+    def jwks_url(self) -> str:
+        return self.CORE_JWKS_URL or f"{self.CORE_API_URL.rstrip('/')}/.well-known/jwks.json"
+
+    @property
+    def hce_permissions(self) -> list[str]:
+        return [p.strip() for p in self.DEV_AUTH_PERMISSIONS.split(",") if p.strip()]
 
     @property
     def integraciones_mockeadas(self) -> bool:

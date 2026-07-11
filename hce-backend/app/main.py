@@ -48,9 +48,15 @@ async def lifespan(app: FastAPI):
     else:
         print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
 
-    # Registro de suscripciones ante el Core en segundo plano
-    from app.services.core_subscription import registrar_suscripciones_core
-    asyncio.create_task(registrar_suscripciones_core())
+    # Bus de eventos del Core (modelo real: RabbitMQ + POST /events/log).
+    if settings.ENABLE_CORE_BUS:
+        from app.integrations.rabbit_consumer import start_core_bus_consumer
+        asyncio.create_task(start_core_bus_consumer())
+    else:
+        # Modelo viejo (suscripción HTTP a /events/subscriptions): el Core indicó
+        # que esos métodos son internos, así que sólo se usa si el bus está apagado.
+        from app.services.core_subscription import registrar_suscripciones_core
+        asyncio.create_task(registrar_suscripciones_core())
 
     yield
     # ── Shutdown ──

@@ -113,6 +113,19 @@ async def crear_orden(
         id_paciente,
     )
 
+    # Publicar también al bus del Core (RabbitMQ vía POST /events/log). Gateado:
+    # no-op si ENABLE_CORE_BUS=False o el event_type_id no está configurado.
+    try:
+        from app.integrations.core_bus import publish_named
+        await publish_named("orden.creada", {
+            "id_orden": orden.id_orden,
+            "id_orden_hce": orden.id_orden,
+            "id_paciente": id_paciente,
+            "tipo_estudio": tipo_estudio.value,
+            "descripcion": descripcion_pedido,
+        })
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("⚠️ No se pudo publicar orden.creada al bus del Core: %s", exc)
     # Integración REST de salida con los módulos M4 y M5
     import asyncio
     from app.integrations import m4_client, m5_client
