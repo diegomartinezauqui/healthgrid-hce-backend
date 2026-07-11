@@ -129,18 +129,37 @@ async def actualizar_episodio(
     # Lógica especial si se está cerrando el episodio
     if data.estado == EstadoEpisodio.CLOSED and episodio.estado != EstadoEpisodio.CLOSED:
         episodio.fecha_cierre = datetime.now(timezone.utc)
-        # Notificar a M7(Facturacion) y M6(Internacion)
-        evento = EventoKafkaEpisodioCerrado(
-            id_evento=uuid4(),
-            fecha_ocurrencia=episodio.fecha_cierre,
-            id_episodio=id_episodio,
-            id_paciente=id_paciente,
-            id_sede=episodio.id_sede,
-            tipo_episodio=episodio.tipo,
-            id_medico_cierre=episodio.id_medico_responsable,
-            total_actos_medicos=len(episodio.actos_medicos),
-        )
-        await kafka_producer.publish(TOPIC_EPISODIO_CERRADO, evento.model_dump(mode="json"))
+        
+        # Publicar también al bus del Core (RabbitMQ vía POST /events/log)
+        try:
+            from app.integrations.core_bus import publish_named
+            await publish_named("episodio.cerrado", {
+                "id_episodio": id_episodio,
+                "id_paciente": id_paciente,
+                "id_sede": episodio.id_sede,
+                "tipo_episodio": episodio.tipo.value if hasattr(episodio.tipo, "value") else episodio.tipo,
+                "id_medico_cierre": episodio.id_medico_responsable,
+                "total_actos_medicos": len(episodio.actos_medicos),
+                "fecha_cierre": episodio.fecha_cierre.isoformat(),
+            })
+        except Exception as exc:
+            logger.warning("⚠️ No se pudo publicar episodio.cerrado al bus del Core: %s", exc)
+
+        # Notificar a M7(Facturacion) y M6(Internacion) vía Kafka (mantener por compatibilidad)
+        try:
+            evento = EventoKafkaEpisodioCerrado(
+                id_evento=uuid4(),
+                fecha_ocurrencia=episodio.fecha_cierre,
+                id_episodio=id_episodio,
+                id_paciente=id_paciente,
+                id_sede=episodio.id_sede,
+                tipo_episodio=episodio.tipo,
+                id_medico_cierre=episodio.id_medico_responsable,
+                total_actos_medicos=len(episodio.actos_medicos),
+            )
+            await kafka_producer.publish(TOPIC_EPISODIO_CERRADO, evento.model_dump(mode="json"))
+        except Exception as e:
+            logger.warning("⚠️ No se pudo publicar episodio_cerrado a Kafka: %s", e)
 
     return await episodio_repo.update(db, episodio, data)
 
@@ -222,20 +241,40 @@ async def publicar_patologia_critica(
         severidad: Nivel de severidad (moderate, high, critical).
     """
     from uuid import uuid4
-    evento = EventoKafkaPatologiaCritica(
-        id_evento=uuid4(),
-        fecha_ocurrencia=datetime.now(timezone.utc),
-        id_paciente=id_paciente,
-        id_episodio=id_episodio,
-        codigo_patologia=codigo_patologia,
-        nombre_patologia=nombre_patologia,
-        id_medico_detecta=id_medico_detecta,
-        id_sede=id_sede,
-        severidad=severidad,
-    )
-    await kafka_producer.publish(
-        TOPIC_PATOLOGIA_CRITICA, evento.model_dump(mode="json")
-    )
+    # Publicar al bus del Core (RabbitMQ)
+    try:
+        from app.integrations.core_bus import publish_named
+        await publish_named("notificacion.obligatoria", {
+            "id_paciente": id_paciente,
+            "id_episodio": id_episodio,
+            "codigo_patologia": codigo_patologia,
+            "nombre_patologia": nombre_patologia,
+            "id_medico_detecta": id_medico_detecta,
+            "id_sede": id_sede,
+            "severidad": severidad,
+            "fecha_ocurrencia": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        logger.warning("⚠️ No se pudo publicar notificacion.obligatoria al bus del Core: %s", exc)
+
+    # Mantenemos Kafka por compatibilidad
+    try:
+        evento = EventoKafkaPatologiaCritica(
+            id_evento=uuid4(),
+            fecha_ocurrencia=datetime.now(timezone.utc),
+            id_paciente=id_paciente,
+            id_episodio=id_episodio,
+            codigo_patologia=codigo_patologia,
+            nombre_patologia=nombre_patologia,
+            id_medico_detecta=id_medico_detecta,
+            id_sede=id_sede,
+            severidad=severidad,
+        )
+        await kafka_producer.publish(
+            TOPIC_PATOLOGIA_CRITICA, evento.model_dump(mode="json")
+        )
+    except Exception as e:
+        logger.warning("⚠️ No se pudo publicar patologia_critica a Kafka: %s", e)
     logger.info(
         "🚨 Evento patologia_critica publicado — paciente: %s, código: %s, episodio: %s",
         id_paciente,

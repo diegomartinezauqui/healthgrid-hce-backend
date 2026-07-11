@@ -36,6 +36,7 @@ EVENTOS = [
     {"name": "hce.receta.creada",       "desc": "HCE emitió una receta (M3 Farmacia)",   "dir": "out"},
     {"name": "hce.internacion.solicitada", "desc": "HCE solicita internación (M6 Camas)", "dir": "out"},
     {"name": "hce.notificacion.obligatoria", "desc": "HCE notifica patología (Epidemiología)", "dir": "out"},
+    {"name": "hce.episodio.cerrado",    "desc": "HCE cerró un episodio médico (M6/M7)",  "dir": "out"},
 ]
 
 

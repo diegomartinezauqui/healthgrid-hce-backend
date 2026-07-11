@@ -1,0 +1,3075 @@
+basePath: /
+definitions:
+  models.AdminCreateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      role_id:
+        minimum: 1
+        type: integer
+    required:
+    - email
+    - first_name
+    - last_name
+    - role_id
+    type: object
+  models.AssignLocationRequest:
+    properties:
+      location_id:
+        example: 1
+        type: integer
+    required:
+    - location_id
+    type: object
+  models.AssignPermissionToRoleRequest:
+    properties:
+      permission_id:
+        type: integer
+    required:
+    - permission_id
+    type: object
+  models.AssignRoleRequest:
+    properties:
+      role_id:
+        example: 1
+        type: integer
+    required:
+    - role_id
+    type: object
+  models.AssignSpecialityRequest:
+    properties:
+      speciality_id:
+        example: 1
+        type: integer
+    required:
+    - speciality_id
+    type: object
+  models.AuthResponse:
+    properties:
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/models.User'
+    type: object
+  models.BindRabbitQueueRequest:
+    properties:
+      event_id:
+        example: 1
+        type: integer
+      queue_name:
+        example: billing.requests
+        type: string
+    required:
+    - event_id
+    - queue_name
+    type: object
+  models.ChangePasswordRequest:
+    properties:
+      current_password:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - current_password
+    - new_password
+    type: object
+  models.CreateEventLogRequest:
+    properties:
+      event_type_id:
+        type: integer
+      payload:
+        type: string
+      publisher_module:
+        type: string
+    required:
+    - event_type_id
+    - publisher_module
+    type: object
+  models.CreateEventSubscriptionRequest:
+    properties:
+      endpoint_url:
+        type: string
+      event_type_id:
+        type: integer
+      subscriber_module:
+        type: string
+    required:
+    - endpoint_url
+    - event_type_id
+    - subscriber_module
+    type: object
+  models.CreateEventTypeRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      source_module:
+        type: string
+    required:
+    - name
+    - source_module
+    type: object
+  models.CreateLocationRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      name:
+        type: string
+    required:
+    - address
+    - city
+    - country
+    - name
+    type: object
+  models.CreatePermissionRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateRabbitQueueRequest:
+    properties:
+      queue_name:
+        example: billing
+        type: string
+      queue_type:
+        enum:
+        - requests
+        - responses
+        example: requests
+        type: string
+    required:
+    - queue_name
+    - queue_type
+    type: object
+  models.CreateRoleRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateSpecialityRequest:
+    properties:
+      name:
+        type: string
+    required:
+    - name
+    type: object
+  models.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  models.ErrorResponse:
+    properties:
+      error:
+        type: string
+    type: object
+  models.EventLog:
+    properties:
+      created_at:
+        type: string
+      event_type:
+        $ref: '#/definitions/models.EventType'
+      event_type_id:
+        type: integer
+      id:
+        type: integer
+      payload:
+        type: string
+      publisher_module:
+        type: string
+      status:
+        description: pending, delivered, failed
+        type: string
+    type: object
+  models.EventLogListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.EventLog'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.EventSubscription:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      endpoint_url:
+        type: string
+      event_type:
+        $ref: '#/definitions/models.EventType'
+      event_type_id:
+        type: integer
+      id:
+        type: integer
+      is_active:
+        type: boolean
+      subscriber_module:
+        type: string
+    type: object
+  models.EventSubscriptionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.EventSubscription'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.EventType:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      source_module:
+        type: string
+    type: object
+  models.EventTypeListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.EventType'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.ForgotPasswordRequest:
+    properties:
+      email:
+        type: string
+    required:
+    - email
+    type: object
+  models.JWK:
+    properties:
+      alg:
+        type: string
+      e:
+        type: string
+      kid:
+        type: string
+      kty:
+        type: string
+      "n":
+        type: string
+      use:
+        type: string
+    type: object
+  models.JWKS:
+    properties:
+      keys:
+        items:
+          $ref: '#/definitions/models.JWK'
+        type: array
+    type: object
+  models.Location:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.LocationListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Location'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - password
+    type: object
+  models.MessageResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  models.Pagination:
+    properties:
+      page:
+        type: integer
+      pageSize:
+        type: integer
+    type: object
+  models.Permission:
+    properties:
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+    type: object
+  models.PermissionListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Permission'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.RabbitQueueBindingResponse:
+    properties:
+      event_id:
+        type: integer
+      exchange:
+        type: string
+      queue_name:
+        type: string
+      rabbit_username:
+        type: string
+      routing_key:
+        type: string
+    type: object
+  models.RabbitQueueResponse:
+    properties:
+      dlq_name:
+        type: string
+      queue_name:
+        type: string
+      queue_type:
+        type: string
+      rabbit_username:
+        type: string
+    type: object
+  models.ResetPasswordRequest:
+    properties:
+      code:
+        type: string
+      email:
+        type: string
+      new_password:
+        minLength: 6
+        type: string
+    required:
+    - code
+    - email
+    - new_password
+    type: object
+  models.Role:
+    properties:
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      permissions:
+        items:
+          $ref: '#/definitions/models.Permission'
+        type: array
+      users:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+    type: object
+  models.RoleListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.SSOExchangeRequest:
+    properties:
+      ticket:
+        type: string
+    required:
+    - ticket
+    type: object
+  models.SSOTicketResponse:
+    properties:
+      expires_in:
+        type: integer
+      ticket:
+        type: string
+    type: object
+  models.Speciality:
+    properties:
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  models.SpecialityListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.Speciality'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.UpdateEventLogStatusRequest:
+    properties:
+      status:
+        description: 'Status must be one of: pending, delivered, failed'
+        enum:
+        - pending
+        - delivered
+        - failed
+        example: delivered
+        type: string
+    required:
+    - status
+    type: object
+  models.UpdateEventSubscriptionRequest:
+    properties:
+      endpoint_url:
+        type: string
+      is_active:
+        type: boolean
+    type: object
+  models.UpdateEventTypeRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+      source_module:
+        type: string
+    type: object
+  models.UpdateLocationRequest:
+    properties:
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      name:
+        type: string
+    type: object
+  models.UpdatePermissionRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  models.UpdateRoleRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  models.UpdateSpecialityRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        type: string
+      deleted_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      has_credentials:
+        type: boolean
+      id:
+        type: integer
+      last_name:
+        type: string
+      locations:
+        items:
+          $ref: '#/definitions/models.Location'
+        type: array
+      roles:
+        items:
+          $ref: '#/definitions/models.Role'
+        type: array
+      specialities:
+        items:
+          $ref: '#/definitions/models.Speciality'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  models.UserListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/models.User'
+        type: array
+      pagination:
+        $ref: '#/definitions/models.Pagination'
+      total:
+        type: integer
+    type: object
+  models.ValidateTokenResponse:
+    properties:
+      user_id:
+        type: integer
+      valid:
+        type: boolean
+    type: object
+  models.VerifyAccountRequest:
+    properties:
+      password:
+        minLength: 6
+        type: string
+      token:
+        type: string
+    required:
+    - password
+    - token
+    type: object
+host: api.healthcare.cantero.ar
+info:
+  contact: {}
+  description: API principal del sistema. Gestiona autenticación, usuarios, roles,
+    permisos, especialidades, locaciones y eventos.
+  title: Core API
+  version: 1.0.0
+paths:
+  /.well-known/jwks.json:
+    get:
+      description: Returns the JSON Web Key Set (JWKS) for verifying JWT signatures
+        issued by this service. Used by other services to validate tokens without
+        contacting this API.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.JWKS'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: JWKS
+      tags:
+      - Auth
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Sends a one-time password reset code to the user's email address.
+      parameters:
+      - description: Email address
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Reset code sent to email
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid email format
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: No user found with that email
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Request password reset
+      tags:
+      - Auth
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticates a user with email and password. Returns a JWT token
+        and user data.
+      parameters:
+      - description: Login credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid credentials
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login
+      tags:
+      - Auth
+  /auth/logout:
+    post:
+      description: Invalidates the current JWT token. Requires a valid Bearer token
+        in the Authorization header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Missing or malformed Authorization header
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Logout
+      tags:
+      - Auth
+  /auth/refresh:
+    post:
+      description: Issues a new JWT token using the current (still valid) token. Requires
+        a valid Bearer token in the Authorization header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Missing or malformed Authorization header
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Refresh token
+      tags:
+      - Auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user account with email and password. Returns a JWT
+        token and user data.
+      parameters:
+      - description: Registration data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid request or email already exists
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Register
+      tags:
+      - Auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      description: Resets the user's password using the code sent via email. The code
+        expires after a limited time.
+      parameters:
+      - description: Reset data (email, code, new password)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Password changed successfully
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid or expired code, or password does not meet requirements
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: No user found with that email
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Reset password
+      tags:
+      - Auth
+  /auth/sso-exchange:
+    post:
+      consumes:
+      - application/json
+      description: Redeems a single-use SSO ticket for a fresh JWT and user data.
+        Called server-to-server by the destination module's backend after receiving
+        the ticket via redirect. The ticket is consumed on first use and cannot be
+        reused.
+      parameters:
+      - description: SSO ticket
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.SSOExchangeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid, used or expired ticket
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Exchange SSO ticket
+      tags:
+      - Auth
+  /auth/sso-ticket:
+    post:
+      description: Issues a short-lived, single-use SSO ticket for the authenticated
+        user. The frontend redirects the browser to another module (on a different
+        domain) with this ticket, and that module's backend redeems it via /auth/sso-exchange
+        for a fresh JWT. The ticket expires in seconds and can be used only once.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SSOTicketResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create SSO ticket
+      tags:
+      - Auth
+  /auth/validate:
+    get:
+      description: Verifies whether a JWT token is valid and returns the associated
+        user ID. Requires a valid Bearer token in the Authorization header.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.ValidateTokenResponse'
+        "400":
+          description: Missing or malformed Authorization header
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Invalid or expired token
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Validate token
+      tags:
+      - Auth
+  /auth/verify-account:
+    post:
+      consumes:
+      - application/json
+      description: Activates an account created by an admin. The user sets their password
+        using the token received by email and receives a JWT token to start their
+        session immediately.
+      parameters:
+      - description: Verification token and chosen password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.VerifyAccountRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.AuthResponse'
+        "400":
+          description: Token invalid, already used, or expired
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Verify account
+      tags:
+      - Auth
+  /events/log:
+    get:
+      description: 'Returns a paginated audit log of all published events. Optionally
+        filter by event_type_id or publisher_module. Requires permission: `events:log:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      - description: Filter by event type ID
+        in: query
+        name: event_type_id
+        type: integer
+      - description: Filter by publisher module name
+        in: query
+        name: publisher_module
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventLogListResponse'
+        "400":
+          description: Invalid pagination or filter parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:log:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List event log
+      tags:
+      - Events
+    post:
+      consumes:
+      - application/json
+      description: 'Publishes an event to the bus. Creates an event log entry with
+        status `pending` and notifies all active subscribers. Requires permission:
+        `events:log:publish`'
+      parameters:
+      - description: Event data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateEventLogRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.EventLog'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:log:publish'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Publish event
+      tags:
+      - Events
+  /events/log/{id}:
+    get:
+      description: 'Returns a single event log entry by ID. Requires permission: `events:log:read`'
+      parameters:
+      - description: Event log entry ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventLog'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:log:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Event log entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get event log entry
+      tags:
+      - Events
+  /events/log/{id}/status:
+    patch:
+      consumes:
+      - application/json
+      description: 'Updates the delivery status of an event log entry. Used by subscribers
+        to report whether the event was delivered successfully. Requires permission:
+        `events:log:update-status`'
+      parameters:
+      - description: Event log entry ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New status
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateEventLogStatusRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventLog'
+        "400":
+          description: Invalid ID or status value
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:log:update-status'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Event log entry not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update event delivery status
+      tags:
+      - Events
+  /events/subscriptions:
+    get:
+      description: 'Returns a paginated list of event subscriptions. Optionally filter
+        by event_type_id. Requires permission: `events:subscriptions:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      - description: Filter by event type ID
+        in: query
+        name: event_type_id
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventSubscriptionListResponse'
+        "400":
+          description: Invalid pagination or filter parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:subscriptions:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List event subscriptions
+      tags:
+      - Events
+    post:
+      consumes:
+      - application/json
+      description: 'Subscribes a module to an event type. The API gateway uses this
+        to route published events to the correct endpoint. Requires permission: `events:subscriptions:manage`'
+      parameters:
+      - description: Subscription data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateEventSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.EventSubscription'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:subscriptions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create event subscription
+      tags:
+      - Events
+  /events/subscriptions/{id}:
+    delete:
+      description: 'Deletes an event subscription by ID. Requires permission: `events:subscriptions:manage`'
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:subscriptions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete event subscription
+      tags:
+      - Events
+    get:
+      description: 'Returns an event subscription by ID. Requires permission: `events:subscriptions:read`'
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventSubscription'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:subscriptions:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Subscription not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get event subscription
+      tags:
+      - Events
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a subscription''s endpoint URL or active status. All fields
+        are optional. Requires permission: `events:subscriptions:manage`'
+      parameters:
+      - description: Subscription ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update (all optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateEventSubscriptionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventSubscription'
+        "400":
+          description: Invalid ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:subscriptions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Subscription not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update event subscription
+      tags:
+      - Events
+  /events/types:
+    get:
+      description: 'Returns a paginated list of all registered event types. Requires
+        permission: `events:types:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventTypeListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:types:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List event types
+      tags:
+      - Events
+    post:
+      consumes:
+      - application/json
+      description: 'Registers a new event type in the system. Requires permission:
+        `events:types:manage`'
+      parameters:
+      - description: Event type data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateEventTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.EventType'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:types:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create event type
+      tags:
+      - Events
+  /events/types/{id}:
+    delete:
+      description: 'Soft-deletes an event type by ID. Requires permission: `events:types:manage`'
+      parameters:
+      - description: Event type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:types:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete event type
+      tags:
+      - Events
+    get:
+      description: 'Returns an event type by ID. Requires permission: `events:types:read`'
+      parameters:
+      - description: Event type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventType'
+        "400":
+          description: Invalid ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:types:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Event type not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get event type
+      tags:
+      - Events
+    put:
+      consumes:
+      - application/json
+      description: 'Updates an event type''s fields. All fields are optional. Requires
+        permission: `events:types:manage`'
+      parameters:
+      - description: Event type ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update (all optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateEventTypeRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.EventType'
+        "400":
+          description: Invalid ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: events:types:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Event type not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update event type
+      tags:
+      - Events
+  /locations:
+    get:
+      description: 'Returns a paginated list of all locations. Requires permission:
+        `locations:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.LocationListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: locations:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List locations
+      tags:
+      - Locations
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new location. Requires permission: `locations:manage`'
+      parameters:
+      - description: Location data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Location'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: locations:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create location
+      tags:
+      - Locations
+  /locations/{id}:
+    delete:
+      description: 'Soft-deletes a location by ID. Requires permission: `locations:manage`'
+      parameters:
+      - description: Location ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid location ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: locations:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Location not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete location
+      tags:
+      - Locations
+    get:
+      description: 'Returns a location by ID. Requires permission: `locations:read`'
+      parameters:
+      - description: Location ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Location'
+        "400":
+          description: Invalid location ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: locations:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Location not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get location
+      tags:
+      - Locations
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a location''s fields. All fields are optional. Requires
+        permission: `locations:manage`'
+      parameters:
+      - description: Location ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update (all optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Location'
+        "400":
+          description: Invalid location ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: locations:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Location not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update location
+      tags:
+      - Locations
+  /permissions:
+    get:
+      description: 'Returns a paginated list of all permissions. Requires permission:
+        `permissions:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.PermissionListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: permissions:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List permissions
+      tags:
+      - Permissions
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new permission. Permission names follow the format `resource:action`
+        or `resource:action:sub-action` (e.g. `users:read`, `users:roles:manage`).
+        Requires permission: `permissions:manage`'
+      parameters:
+      - description: Permission data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Permission'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: permissions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create permission
+      tags:
+      - Permissions
+  /permissions/{id}:
+    delete:
+      description: 'Soft-deletes a permission by ID. Requires permission: `permissions:manage`'
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid permission ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: permissions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete permission
+      tags:
+      - Permissions
+    get:
+      description: 'Returns a permission by ID including the roles it is assigned
+        to. Requires permission: `permissions:read`'
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Permission'
+        "400":
+          description: Invalid permission ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: permissions:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Permission not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get permission
+      tags:
+      - Permissions
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a permission''s name. Requires permission: `permissions:manage`'
+      parameters:
+      - description: Permission ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdatePermissionRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Permission'
+        "400":
+          description: Invalid permission ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: permissions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update permission
+      tags:
+      - Permissions
+  /rabbit/bindings:
+    post:
+      consumes:
+      - application/json
+      description: Binds an existing queue to `health_grid_exchange` using the event
+        name as routing key. The authenticated user's email must exist as a RabbitMQ
+        username and have read permission on the queue.
+      parameters:
+      - description: Binding data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.BindRabbitQueueRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RabbitQueueBindingResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: RabbitMQ user does not have read permission
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Queue or event not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "503":
+          description: RabbitMQ unavailable
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Bind RabbitMQ queue to event
+      tags:
+      - Rabbit
+  /rabbit/queues:
+    post:
+      consumes:
+      - application/json
+      description: Creates a durable RabbitMQ queue with suffix `.requests` or `.responses`
+        and its DLQ. The authenticated user's email must exist as a RabbitMQ username.
+      parameters:
+      - description: Queue data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRabbitQueueRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.RabbitQueueResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: Authenticated user is not a RabbitMQ user
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "503":
+          description: RabbitMQ unavailable
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create RabbitMQ request/response queue
+      tags:
+      - Rabbit
+  /roles:
+    get:
+      description: 'Returns a paginated list of all roles. Requires permission: `roles:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.RoleListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List roles
+      tags:
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new role. Requires permission: `roles:manage`'
+      parameters:
+      - description: Role data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create role
+      tags:
+      - Roles
+  /roles/{id}:
+    delete:
+      description: 'Soft-deletes a role by ID. Requires permission: `roles:manage`'
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid role ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete role
+      tags:
+      - Roles
+    get:
+      description: 'Returns a role by ID including its assigned permissions. Requires
+        permission: `roles:read`'
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Invalid role ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Role not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get role
+      tags:
+      - Roles
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a role''s name. Requires permission: `roles:manage`'
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Role'
+        "400":
+          description: Invalid role ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update role
+      tags:
+      - Roles
+  /roles/{id}/permissions:
+    post:
+      consumes:
+      - application/json
+      description: 'Assigns an existing permission to a role. Users with this role
+        will gain that permission. Requires permission: `roles:permissions:manage`'
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Permission to assign
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AssignPermissionToRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid role ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:permissions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Assign permission to role
+      tags:
+      - Roles
+  /roles/{id}/permissions/{permissionId}:
+    delete:
+      description: 'Removes a permission from a role. Users with this role will lose
+        that permission. Requires permission: `roles:permissions:manage`'
+      parameters:
+      - description: Role ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Permission ID
+        in: path
+        name: permissionId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid role ID or permission ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: roles:permissions:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Remove permission from role
+      tags:
+      - Roles
+  /specialities:
+    get:
+      description: 'Returns a paginated list of all specialities. Requires permission:
+        `specialities:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.SpecialityListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: specialities:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List specialities
+      tags:
+      - Specialities
+    post:
+      consumes:
+      - application/json
+      description: 'Creates a new speciality. Requires permission: `specialities:manage`'
+      parameters:
+      - description: Speciality data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreateSpecialityRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Speciality'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: specialities:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create speciality
+      tags:
+      - Specialities
+  /specialities/{id}:
+    delete:
+      description: 'Soft-deletes a speciality by ID. Requires permission: `specialities:manage`'
+      parameters:
+      - description: Speciality ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid speciality ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: specialities:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete speciality
+      tags:
+      - Specialities
+    get:
+      description: 'Returns a speciality by ID. Requires permission: `specialities:read`'
+      parameters:
+      - description: Speciality ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Speciality'
+        "400":
+          description: Invalid speciality ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: specialities:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Speciality not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get speciality
+      tags:
+      - Specialities
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a speciality''s name. Requires permission: `specialities:manage`'
+      parameters:
+      - description: Speciality ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateSpecialityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Speciality'
+        "400":
+          description: Invalid speciality ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: specialities:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update speciality
+      tags:
+      - Specialities
+  /users:
+    get:
+      description: 'Returns a paginated list of all users. Requires permission: `users:read`'
+      parameters:
+      - default: 1
+        description: 'Page number (default: 1)'
+        in: query
+        minimum: 1
+        name: page
+        type: integer
+      - default: 10
+        description: 'Items per page (default: 10)'
+        in: query
+        minimum: 1
+        name: pageSize
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.UserListResponse'
+        "400":
+          description: Invalid pagination parameters
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: List users
+      tags:
+      - Users
+    post:
+      consumes:
+      - application/json
+      description: 'An admin creates an account for another person and assigns them
+        a role. The system sends a 48-hour activation email; the user sets their password
+        via /auth/verify-account. Requires permission: `users:create:role:{roleID}`'
+      parameters:
+      - description: New user data including role assignment
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AdminCreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:create:role:{roleID}'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Email already exists
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Create user (admin)
+      tags:
+      - Users
+  /users/{id}:
+    delete:
+      description: 'Soft-deletes a user by ID. The user is marked as deleted but remains
+        in the database. Requires permission: `users:delete`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:delete'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Delete user
+      tags:
+      - Users
+    get:
+      description: 'Returns a user by ID including their roles, locations and specialities.
+        Requires permission: `users:read`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid user ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:read'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Get user
+      tags:
+      - Users
+    put:
+      consumes:
+      - application/json
+      description: 'Updates a user''s profile fields (first name, last name, email).
+        All fields are optional. Requires permission: `users:write`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Fields to update (all optional)
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:write'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Update user
+      tags:
+      - Users
+  /users/{id}/locations:
+    post:
+      consumes:
+      - application/json
+      description: 'Assigns an existing location to a user. Requires permission: `users:locations:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Location to assign
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AssignLocationRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:locations:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Assign location to user
+      tags:
+      - Users
+  /users/{id}/locations/{locationId}:
+    delete:
+      description: 'Removes a location from a user. Requires permission: `users:locations:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Location ID
+        in: path
+        name: locationId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or location ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:locations:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Remove location from user
+      tags:
+      - Users
+  /users/{id}/password:
+    put:
+      consumes:
+      - application/json
+      description: 'Changes the authenticated user''s own password. The `{id}` in
+        the path must match the authenticated user''s ID. Requires permission: `users:password:self`'
+      parameters:
+      - description: User ID (must match authenticated user)
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Current and new password
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.ChangePasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid request or incorrect current password
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:password:self, or ID mismatch'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Change password
+      tags:
+      - Users
+  /users/{id}/resend-verification:
+    post:
+      description: 'Resends the activation email if the user hasn''t used the previous
+        link (expires in 48h). Fails if the account is already verified. Requires
+        permission: `users:create`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Verification email sent
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:create'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "409":
+          description: Account already verified
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Resend verification email
+      tags:
+      - Users
+  /users/{id}/roles:
+    post:
+      consumes:
+      - application/json
+      description: 'Assigns an existing role to a user. Requires permission: `users:roles:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role to assign
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AssignRoleRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:roles:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Assign role to user
+      tags:
+      - Users
+  /users/{id}/roles/{roleId}:
+    delete:
+      description: 'Removes a role from a user. Requires permission: `users:roles:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Role ID
+        in: path
+        name: roleId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or role ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:roles:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Remove role from user
+      tags:
+      - Users
+  /users/{id}/specialities:
+    post:
+      consumes:
+      - application/json
+      description: 'Assigns an existing speciality to a user. Requires permission:
+        `users:specialities:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Speciality to assign
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/models.AssignSpecialityRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:specialities:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Assign speciality to user
+      tags:
+      - Users
+  /users/{id}/specialities/{specialityId}:
+    delete:
+      description: 'Removes a speciality from a user. Requires permission: `users:specialities:manage`'
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Speciality ID
+        in: path
+        name: specialityId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.MessageResponse'
+        "400":
+          description: Invalid user ID or speciality ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Unauthenticated
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "403":
+          description: 'Missing permission: users:specialities:manage'
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      security:
+      - Bearer: []
+      summary: Remove speciality from user
+      tags:
+      - Users
+securityDefinitions:
+  Bearer:
+    description: 'JWT token de autenticación. Formato: "Bearer {token}"'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

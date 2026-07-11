@@ -89,6 +89,8 @@ def _event_id_por_nombre(nombre: str) -> int:
     return {
         "orden.creada": settings.CORE_EVENT_ORDEN_CREADA_ID,
         "receta.creada": settings.CORE_EVENT_RECETA_CREADA_ID,
+        "episodio.cerrado": settings.CORE_EVENT_EPISODIO_CERRADO_ID,
+        "notificacion.obligatoria": settings.CORE_EVENT_PATOLOGIA_CRITICA_ID,
     }.get(nombre, 0)
 
 
