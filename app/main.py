@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 from app.config import settings
 from app.kafka.consumer import start_kafka_consumer
@@ -82,9 +83,12 @@ app = FastAPI(
 )
 
 # ─── Configuración de CORS ──────────────────────────────────────
+# Los orígenes se leen de la variable de entorno ALLOWED_ORIGINS (config.py).
+# En desarrollo el default incluye localhost:3000/5173/5174.
+# En producción, definir en .env: ALLOWED_ORIGINS=https://app.healthgrid.com
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, reemplazar con el dominio del frontend
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -116,3 +120,29 @@ app.include_router(webhooks.router, prefix=API_PREFIX)
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
 
+
+# ─── Endpoint raíz ───────────────────────────────────────────────
+_BANNER = """
+██╗  ██╗███████╗ █████╗ ██╗  ████████╗██╗  ██╗ ██████╗ ██████╗ ██╗██████╗
+██║  ██║██╔════╝██╔══██╗██║  ╚══██╔══╝██║  ██║██╔════╝ ██╔══██╗██║██╔══██╗
+███████║█████╗  ███████║██║     ██║   ███████║██║  ███╗██████╔╝██║██║  ██║
+██╔══██║██╔══╝  ██╔══██║██║     ██║   ██╔══██║██║   ██║██╔══██╗██║██║  ██║
+██║  ██║███████╗██║  ██║███████╗██║   ██║  ██║╚██████╔╝██║  ██║██║██████╔╝
+╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝╚═╝╚═════╝
+
+  ╔══════════════════════════════════════════════════════════════╗
+  ║        BACKEND CORRIENDO  —  MÓDULO 1 (HCE)  ✅             ║
+  ║        Historia Clínica Electrónica — Health Grid            ║
+  ╠══════════════════════════════════════════════════════════════╣
+  ║  API Docs  →  /docs                                          ║
+  ║  ReDoc     →  /redoc                                         ║
+  ║  Health    →  /api/v1/health                                 ║
+  ╚══════════════════════════════════════════════════════════════╝
+"""
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    """Endpoint raíz — muestra banner de estado del módulo HCE."""
+    body = _BANNER + f"  version : 1.0.0\n  entorno : {settings.APP_ENV}\n"
+    return Response(content=body, media_type="text/plain; charset=utf-8")

@@ -18,6 +18,18 @@ class Settings(BaseSettings):
     # ─── Base de datos ────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://hce_user:hce_pass@localhost:5432/hce_db"
 
+    # ─── CORS ─────────────────────────────────────────────────────
+    # Orígenes permitidos separados por coma. En producción colocar
+    # exclusivamente el dominio del frontend desplegado.
+    # Ejemplo: ALLOWED_ORIGINS=https://app.healthgrid.com,https://www.healthgrid.com
+    ALLOWED_ORIGINS: str = (
+        "http://localhost:3000,"
+        "http://localhost:5173,"
+        "http://localhost:5174,"
+        "http://127.0.0.1:3000,"
+        "http://127.0.0.1:5173"
+    )
+
     # ─── JWT ──────────────────────────────────────────────────────
     JWT_SECRET_KEY: str = "super-secret-key-compartida-con-core"
     JWT_ALGORITHM: str = "HS256"
@@ -105,6 +117,11 @@ class Settings(BaseSettings):
     @property
     def hce_permissions(self) -> list[str]:
         return [p.strip() for p in self.DEV_AUTH_PERMISSIONS.split(",") if p.strip()]
+
+    @property
+    def allowed_origins_list(self) -> list[str]:
+        """Devuelve la lista de orígenes CORS parseada desde la variable de entorno."""
+        return [o.strip() for o in self.ALLOWED_ORIGINS.split(",") if o.strip()]
 
     @property
     def integraciones_mockeadas(self) -> bool:
