@@ -47,9 +47,19 @@ async def listar_ordenes(
 ):
     ordenes = await orden_service.get_ordenes(db, tipo_estudio=tipo_estudio, estado=estado)
 
+    # Optimización N+1: Cargar alertas de todos los pacientes únicos en una sola query
+    from app.repositories.alerta_repository import alerta_repo
+    ids_pacientes = list({o.id_paciente for o in ordenes})
+    alertas_list = await alerta_repo.get_activas_by_pacientes(db, ids_pacientes)
+    
+    # Agrupar por id_paciente para acceso O(1)
+    alertas_por_paciente = {}
+    for a in alertas_list:
+        alertas_por_paciente.setdefault(a.id_paciente, []).append(a)
+
     data = []
     for orden in ordenes:
-        alertas = await orden_service.get_alertas_clinicas_paciente(db, orden.id_paciente)
+        alertas = alertas_por_paciente.get(orden.id_paciente, [])
         data.append(
             OrdenMedicaCompleta(
                 id_orden=orden.id_orden,
@@ -172,9 +182,11 @@ async def listar_ordenes_paciente(
 ):
     ordenes = await orden_service.get_ordenes_paciente(db, id_paciente=id_paciente)
 
+    # Optimización N+1: Consultar alertas una única vez
+    alertas = await orden_service.get_alertas_clinicas_paciente(db, id_paciente)
+
     data = []
     for orden in ordenes:
-        alertas = await orden_service.get_alertas_clinicas_paciente(db, orden.id_paciente)
         data.append(
             OrdenMedicaCompleta(
                 id_orden=orden.id_orden,

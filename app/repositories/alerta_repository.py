@@ -52,6 +52,20 @@ class AlertaRepository(BaseRepository[AlertaClinicaPaciente, AlertaUpdate]):
         )
         return list(result.scalars().all())
 
+    async def get_activas_by_pacientes(
+        self, db: AsyncSession, ids_pacientes: list[int]
+    ) -> list[AlertaClinicaPaciente]:
+        """Solo alertas Activas de varios pacientes — para optimización N+1."""
+        if not ids_pacientes:
+            return []
+        result = await db.execute(
+            select(AlertaClinicaPaciente).where(
+                AlertaClinicaPaciente.id_paciente.in_(ids_pacientes),
+                AlertaClinicaPaciente.estado == EstadoAlerta.ACTIVA,
+            )
+        )
+        return list(result.scalars().all())
+
     async def create(
         self, db: AsyncSession, id_paciente: int, data: AlertaCreate, id_medico: int
     ) -> AlertaClinicaPaciente:

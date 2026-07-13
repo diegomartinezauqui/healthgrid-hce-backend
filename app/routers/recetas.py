@@ -42,16 +42,25 @@ async def listar_recetas(
     estado: Optional[str] = None,
     id_paciente: Optional[int] = None,
     desde_fecha: Optional[date] = None,
+    id_episodio: Optional[int] = None,
 ):
     recetas = await receta_service.get_recetas(
-        db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha
+        db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha, id_episodio=id_episodio
     )
+
+    # Optimización N+1: Cargar alertas de todos los pacientes únicos en una sola query
+    from app.repositories.alerta_repository import alerta_repo
+    ids_pacientes = list({r.id_paciente for r in recetas})
+    alertas_list = await alerta_repo.get_activas_by_pacientes(db, ids_pacientes)
+    
+    # Agrupar por id_paciente para acceso O(1)
+    alertas_por_paciente = {}
+    for a in alertas_list:
+        alertas_por_paciente.setdefault(a.id_paciente, []).append(a)
 
     data = []
     for receta in recetas:
-        alertas = await receta_service.get_alertas_farmacologicas_paciente(
-            db, receta.id_paciente
-        )
+        alertas = alertas_por_paciente.get(receta.id_paciente, [])
         data.append(
             RecetaMedicaDetallada(
                 id_receta=receta.id_receta,
