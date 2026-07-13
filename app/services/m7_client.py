@@ -104,7 +104,10 @@ async def notificar_prestacion(
         import httpx
 
         url = f"{settings.M7_BASE_URL}/api/integracion/prestaciones"
-        headers = {"Content-Type": "application/json"}
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": "billing-secret-key",
+        }
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
@@ -141,4 +144,205 @@ async def notificar_prestacion(
 
     except Exception as exc:
         logger.error("❌ Error de conexión con M7 (Facturación): %s", exc)
+        raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
+
+
+async def buscar_prestaciones_nomenclador(
+    *,
+    codigo: Optional[str] = None,
+    descripcion: Optional[str] = None,
+    tipo_prestacion: Optional[str] = None,
+    token: Optional[str] = None,
+) -> list:
+    """
+    Consultar el nomenclador de M7 (Facturación) para obtener el catálogo de prestaciones.
+    """
+    if settings.integraciones_mockeadas:
+        logger.info(
+            "🧪 [MOCK M7] GET %s/api/prestaciones-nomenclador — params: %s",
+            settings.M7_BASE_URL,
+            {"codigo": codigo, "descripcion": descripcion, "tipoPrestacion": tipo_prestacion},
+        )
+        mock_data = [
+            {"id": 1, "codigoNomenclador": "42.01.01", "descripcion": "Consulta médica general", "tipoPrestacion": "CONSULTA", "activa": True},
+            {"id": 2, "codigoNomenclador": "99.01.01", "descripcion": "Intervención de especialista", "tipoPrestacion": "PRACTICA", "activa": True},
+            {"id": 3, "codigoNomenclador": "01.01.01", "descripcion": "Hemograma completo", "tipoPrestacion": "LABORATORIO", "activa": True},
+            {"id": 4, "codigoNomenclador": "02.01.01", "descripcion": "Radiografía de tórax", "tipoPrestacion": "PRACTICA", "activa": True},
+        ]
+        # Filtrado mock local
+        filtered = mock_data
+        if codigo:
+            filtered = [x for x in filtered if codigo.lower() in x["codigoNomenclador"].lower()]
+        if descripcion:
+            filtered = [x for x in filtered if descripcion.lower() in x["descripcion"].lower()]
+        if tipo_prestacion:
+            filtered = [x for x in filtered if x["tipoPrestacion"].upper() == tipo_prestacion.upper()]
+        return filtered
+
+    try:
+        import httpx
+
+        url = f"{settings.M7_BASE_URL}/api/prestaciones-nomenclador"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": "billing-secret-key",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        params = {}
+        if codigo:
+            params["codigo"] = codigo
+        if descripcion:
+            params["descripcion"] = descripcion
+        if tipo_prestacion:
+            params["tipoPrestacion"] = tipo_prestacion
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(
+                "❌ M7 respondió con error %s al buscar prestaciones: %s",
+                response.status_code,
+                response.text,
+            )
+            raise RuntimeError(
+                f"M7 rechazó la búsqueda con status {response.status_code}: {response.text}"
+            )
+
+    except ImportError:
+        logger.warning("⚠️ httpx no disponible. Simulando búsqueda en nomenclador.")
+        return []
+
+    except RuntimeError:
+        raise
+
+    except Exception as exc:
+        logger.error("❌ Error de conexión con M7 (Facturación) al buscar nomenclador: %s", exc)
+        raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
+
+
+async def buscar_entidades_financiadoras(
+    *,
+    token: Optional[str] = None,
+) -> list:
+    """
+    Consultar las entidades financiadoras (obras sociales / prepagas) registradas en M7.
+    """
+    if settings.integraciones_mockeadas:
+        logger.info(
+            "🧪 [MOCK M7] GET %s/api/entidades-financiadoras",
+            settings.M7_BASE_URL,
+        )
+        return [
+            {"id": 1, "nombre": "OSDE", "cuit": "30-54678912-9", "tipoFinanciador": "PREPAGA", "activa": True},
+            {"id": 2, "nombre": "Swiss Medical", "cuit": "30-68951234-8", "tipoFinanciador": "PREPAGA", "activa": True},
+            {"id": 3, "nombre": "Particular", "cuit": "", "tipoFinanciador": "OTRO", "activa": True},
+            {"id": 4, "nombre": "PAMI", "cuit": "30-50000319-3", "tipoFinanciador": "ESTATAL", "activa": True},
+        ]
+
+    try:
+        import httpx
+
+        url = f"{settings.M7_BASE_URL}/api/entidades-financiadoras"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": "billing-secret-key",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(
+                "❌ M7 respondió con error %s al buscar financiadores: %s",
+                response.status_code,
+                response.text,
+            )
+            raise RuntimeError(
+                f"M7 rechazó la búsqueda con status {response.status_code}: {response.text}"
+            )
+
+    except ImportError:
+        logger.warning("⚠️ httpx no disponible. Simulando búsqueda de financiadores.")
+        return []
+
+    except RuntimeError:
+        raise
+
+    except Exception as exc:
+        logger.error("❌ Error de conexión con M7 (Facturación) al buscar financiadores: %s", exc)
+        raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
+
+
+async def buscar_planes(
+    *,
+    entidad_financiadora_id: Optional[int] = None,
+    token: Optional[str] = None,
+) -> list:
+    """
+    Consultar los planes asociados a entidades financiadoras en M7.
+    """
+    if settings.integraciones_mockeadas:
+        logger.info(
+            "🧪 [MOCK M7] GET %s/api/planes — params: %s",
+            settings.M7_BASE_URL,
+            {"entidadFinanciadoraId": entidad_financiadora_id},
+        )
+        mock_data = [
+            {"id": 1, "entidadFinanciadoraId": 1, "entidadFinanciadoraNombre": "OSDE", "nombre": "OSDE 310", "codigo": "310", "activo": True},
+            {"id": 2, "entidadFinanciadoraId": 1, "entidadFinanciadoraNombre": "OSDE", "nombre": "OSDE 410", "codigo": "410", "activo": True},
+            {"id": 3, "entidadFinanciadoraId": 2, "entidadFinanciadoraNombre": "Swiss Medical", "nombre": "SMG02", "codigo": "SMG02", "activo": True},
+            {"id": 4, "entidadFinanciadoraId": 4, "entidadFinanciadoraNombre": "PAMI", "nombre": "Plan Jubilados", "codigo": "PAM-JUB", "activo": True},
+        ]
+        if entidad_financiadora_id is not None:
+            return [x for x in mock_data if x["entidadFinanciadoraId"] == entidad_financiadora_id]
+        return mock_data
+
+    try:
+        import httpx
+
+        url = f"{settings.M7_BASE_URL}/api/planes"
+        headers = {
+            "Content-Type": "application/json",
+            "x-api-key": "billing-secret-key",
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        params = {}
+        if entidad_financiadora_id is not None:
+            params["entidadFinanciadoraId"] = entidad_financiadora_id
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.get(url, params=params, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(
+                "❌ M7 respondió con error %s al buscar planes: %s",
+                response.status_code,
+                response.text,
+            )
+            raise RuntimeError(
+                f"M7 rechazó la búsqueda con status {response.status_code}: {response.text}"
+            )
+
+    except ImportError:
+        logger.warning("⚠️ httpx no disponible. Simulando búsqueda de planes.")
+        return []
+
+    except RuntimeError:
+        raise
+
+    except Exception as exc:
+        logger.error("❌ Error de conexión con M7 (Facturación) al buscar planes: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc

@@ -24,6 +24,7 @@ from app.routers import (
     historial,
     insurance,
     internacion,
+    nomenclador,
     ordenes,
     pacientes,
     recetas,
@@ -113,6 +114,7 @@ app.include_router(internacion.router, prefix=API_PREFIX, tags=["Integración M6
 app.include_router(solicitudes_cama.router, prefix=API_PREFIX)
 app.include_router(webhooks.router, prefix=API_PREFIX)
 app.include_router(insurance.router, prefix=API_PREFIX, tags=["Integración M7 (Facturación)"])
+app.include_router(nomenclador.router, prefix=API_PREFIX)
 app.include_router(historial.router, prefix=API_PREFIX, tags=["Integración M8 (Portal del Paciente)"])
 
 
