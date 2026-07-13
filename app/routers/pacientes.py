@@ -27,10 +27,16 @@ router = APIRouter()
 )
 async def listar_pacientes(
     db: DbSession,
+    email: Optional[str] = Query(None, description="Filtrar por email (sincroniza con el Core si no está en la caché)"),
     skip: int = Query(0, ge=0, description="Registros a omitir para paginación"),
     limit: int = Query(100, ge=1, le=500, description="Límite de registros a retornar"),
     _user=Depends(require_permission("hce:episodes:read")),
 ):
+    if email:
+        from app.services.core_patient_sync import get_or_create_patient_by_email
+        paciente = await get_or_create_patient_by_email(db, email)
+        return [paciente] if paciente else []
+
     pacientes = await paciente_repo.get_all(db, skip=skip, limit=limit)
     return pacientes
 
@@ -51,10 +57,11 @@ async def obtener_paciente(
     db: DbSession,
     _user=Depends(require_permission("hce:episodes:read")),
 ):
-    paciente = await paciente_repo.get(db, id_paciente)
+    from app.services.core_patient_sync import get_or_create_patient_from_core
+    paciente = await get_or_create_patient_from_core(db, id_paciente)
     if not paciente:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"error": "NOT_FOUND", "message": f"No se encontró el paciente con ID {id_paciente} en la caché."},
+            detail={"error": "NOT_FOUND", "message": f"No se encontró el paciente con ID {id_paciente} en la caché ni en el Core."},
         )
     return paciente

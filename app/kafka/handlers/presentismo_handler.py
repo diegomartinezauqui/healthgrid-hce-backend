@@ -46,6 +46,10 @@ async def handle_presentismo(data: dict):
         )
 
         async with async_session() as db:
+            from app.services.core_patient_sync import get_or_create_patient_from_core
+            # Aseguramos la sincronización del paciente desde el Core a nuestra caché local
+            await get_or_create_patient_from_core(db, evento.id_paciente)
+
             await sala_espera_service.ingresar_paciente(db, evento.id_paciente, sala_create)
             await db.commit()
 

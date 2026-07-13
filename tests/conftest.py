@@ -15,6 +15,10 @@ from app.database import Base
 from app.dependencies import get_db
 from app.main import app as fastapi_app
 
+# Forzar modo mock en la suite de tests para independizar del .env local
+from app.config import settings
+settings.INTEGRATION_MODE = "mock"
+
 # ─── Engine de test (SQLite async) ────────────────────────────────
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
