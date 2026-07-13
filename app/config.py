@@ -27,7 +27,8 @@ class Settings(BaseSettings):
         "http://localhost:5173,"
         "http://localhost:5174,"
         "http://127.0.0.1:3000,"
-        "http://127.0.0.1:5173"
+        "http://127.0.0.1:5173,"
+        "https://healthgrid-hce-frontend-olive.vercel.app"
     )
 
     # ─── JWT ──────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ class Settings(BaseSettings):
     M6_BASE_URL: str = "http://localhost:8006/api"
     M5_BASE_URL: str = "https://uade-da2-backend.onrender.com"
     M4_BASE_URL: str = "http://localhost:8004/api"
+    M7_BASE_URL: str = "http://localhost:8007"
     HCE_PUBLIC_URL: str = "http://localhost:8000"
 
     # ─── Bus de eventos del Core (RabbitMQ + POST /events/log) ────
