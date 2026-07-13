@@ -125,7 +125,9 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
         "dni": "99988877",
         "fecha_nacimiento": "1990-05-15",
         "genero": "M",
-        "obra_social": "OSDE 310"
+        "obra_social": "OSDE 310",
+        "id_obra_social": 1,
+        "numero_afiliado": "1234567890"
     }
 
     # Primera creación y sincronización demográfica
@@ -140,6 +142,14 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
     await db.refresh(paciente)
     assert paciente.datos_personales["dni"] == "99988877"
     assert paciente.datos_personales["obra_social"] == "OSDE 310"
+
+    # Verificar creación de cobertura médica
+    from app.models.cobertura_medica import CoberturaMedica
+    q_cob = await db.execute(select(CoberturaMedica).where(CoberturaMedica.id_paciente == id_paciente))
+    cob = q_cob.scalar_one_or_none()
+    assert cob is not None
+    assert cob.id_obra_social == 1
+    assert cob.numero_afiliado == "1234567890"
 
     # Segunda llamada (actualización/upsert)
     payload_update = {
@@ -157,7 +167,9 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
             }
         ],
         "alertas_clinicas": [],
-        "obra_social": "Swiss Medical"
+        "obra_social": "Swiss Medical",
+        "id_obra_social": 2,
+        "numero_afiliado": "0987654321"
     }
 
     response2 = await client.post(
@@ -178,6 +190,11 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
     assert paciente.datos_personales["obra_social"] == "Swiss Medical"
     # El DNI no debería haber cambiado porque no se envió en payload_update (None)
     assert paciente.datos_personales["dni"] == "99988877"
+
+    # Verificar actualización de cobertura médica en cache local
+    await db.refresh(cob)
+    assert cob.id_obra_social == 2
+    assert cob.numero_afiliado == "0987654321"
 
 
 @pytest.mark.asyncio

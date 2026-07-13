@@ -99,6 +99,30 @@ async def crear_ficha_medica_completa(
         flag_modified(paciente, "datos_personales")
         db.add(paciente)
 
+    # Sincronizar Cobertura Médica (obra social / prepaga) en caché local
+    if data.id_obra_social is not None:
+        from app.models.cobertura_medica import CoberturaMedica
+        from sqlalchemy import select
+        result_cob = await db.execute(
+            select(CoberturaMedica).where(CoberturaMedica.id_paciente == id_paciente).limit(1)
+        )
+        cobertura = result_cob.scalar_one_or_none()
+        nombre_cob = data.obra_social or "Obra Social"
+
+        if not cobertura:
+            cobertura = CoberturaMedica(
+                id_paciente=id_paciente,
+                id_obra_social=data.id_obra_social,
+                nombre_obra_social=nombre_cob,
+                numero_afiliado=data.numero_afiliado,
+            )
+        else:
+            cobertura.id_obra_social = data.id_obra_social
+            cobertura.nombre_obra_social = nombre_cob
+            cobertura.numero_afiliado = data.numero_afiliado
+
+        db.add(cobertura)
+
     # 1. Crear o actualizar ficha médica básica
     ficha = await ficha_medica_repo.get_by_paciente(db, id_paciente)
     if not ficha:

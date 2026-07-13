@@ -65,6 +65,8 @@ class FichaMedicaCompletaCreate(BaseModel):
     fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento (YYYY-MM-DD)")
     genero: Optional[str] = Field(None, description="Género/Sexo del paciente")
     obra_social: Optional[str] = Field(None, description="Obra social o cobertura médica")
+    id_obra_social: Optional[int] = Field(None, description="ID de la Obra Social (Módulo 7)")
+    numero_afiliado: Optional[str] = Field(None, description="Número de afiliado del paciente")
 
 
 class FichaMedicaCompletaResponse(BaseModel):
