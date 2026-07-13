@@ -37,4 +37,5 @@ class Episodio(Base):
     actos_medicos = relationship("ActoMedico", back_populates="episodio", lazy="selectin")
     evoluciones = relationship("Evolucion", back_populates="episodio", lazy="selectin")
     movimientos = relationship("MovimientoInternacion", back_populates="episodio", lazy="selectin")
+    ordenes = relationship("Orden", foreign_keys="[Orden.id_episodio]", back_populates="episodio", lazy="selectin")
 

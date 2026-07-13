@@ -75,6 +75,16 @@ async def test_flujo_completo_ordenes_y_resultados(
     assert res_orden_img.status_code == 201
     id_orden_img = res_orden_img.json()["id_orden"]
 
+    # Verificar que el listado de episodios muestre la cantidad correcta de estudios
+    res_episodes_check = await client.get(
+        "/api/v1/patients/10500/episodes",
+        headers=auth_headers,
+    )
+    assert res_episodes_check.status_code == 200
+    episodes_list = res_episodes_check.json()["episodios"]
+    assert len(episodes_list) == 1
+    assert episodes_list[0]["cant_estudios"] == 1
+
     # Validar persistencia de la orden de imagen
     q_orden_img = await db.execute(select(Orden).where(Orden.id_orden == id_orden_img))
     orden_img = q_orden_img.scalar_one()

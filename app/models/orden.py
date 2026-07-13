@@ -46,7 +46,7 @@ class Orden(Base):
 
     # ─── Relaciones ───────────────────────────────────────────────
     paciente = relationship("Paciente", back_populates="ordenes")
-    episodio = relationship("Episodio", foreign_keys=[id_episodio])
+    episodio = relationship("Episodio", foreign_keys=[id_episodio], back_populates="ordenes")
     evolucion = relationship("Evolucion", foreign_keys=[id_evolucion])
     resultados_laboratorio = relationship("ResultadoLaboratorio", back_populates="orden", cascade="all, delete-orphan")
     resultados_imagenes = relationship("ResultadoImagen", back_populates="orden", cascade="all, delete-orphan")

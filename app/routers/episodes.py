@@ -74,7 +74,7 @@ async def listar_episodios(
                 id_medico_responsable=ep.id_medico_responsable,
                 cant_evoluciones=len(ep.evoluciones) if ep.evoluciones else 0,
                 cant_recetas=sum(len(ev.recetas) for ev in ep.evoluciones if ev.recetas) if ep.evoluciones else 0,
-                cant_estudios=len([a for a in ep.actos_medicos if a.tipo.value in ["estudio-laboratorio", "estudio-imagen"]]) if ep.actos_medicos else 0,
+                cant_estudios=len(ep.ordenes) if ep.ordenes else 0,
             )
             for ep in episodios
         ],

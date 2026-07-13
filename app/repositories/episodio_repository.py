@@ -30,7 +30,17 @@ class EpisodioRepository(BaseRepository[Episodio, EpisodioUpdate]):
         hasta_fecha: Optional[date] = None,
     ) -> Sequence[Episodio]:
         """Obtener episodios de un paciente con filtros opcionales."""
-        query = select(self.model).where(self.model.id_paciente == id_paciente)
+        from sqlalchemy.orm import selectinload
+        from app.models.evolucion import Evolucion
+
+        query = (
+            select(self.model)
+            .options(
+                selectinload(self.model.evoluciones).selectinload(Evolucion.recetas),
+                selectinload(self.model.ordenes)
+            )
+            .where(self.model.id_paciente == id_paciente)
+        )
 
         if estado and estado != "all":
             query = query.where(self.model.estado == estado)
