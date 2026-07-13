@@ -72,11 +72,26 @@ async def crear_orden(
     clinica.estudios.orden_creada para que M4 (Laboratorio) y M5 (Imágenes) la procesen.
     """
     from app.models.paciente import Paciente
+    from app.models.episodio import Episodio
+    from app.models.evolucion import Evolucion
+    
     # Obtener paciente para extraer datos reales (necesarios para el contrato de M4)
     result_p = await db.execute(select(Paciente).where(Paciente.id_paciente == id_paciente))
     paciente = result_p.scalar_one_or_none()
     if not paciente:
         raise LookupError(f"Paciente con ID {id_paciente} no encontrado.")
+
+    # Validar que el episodio exista si se proporcionó
+    if id_episodio:
+        result_e = await db.execute(select(Episodio).where(Episodio.id_episodio == id_episodio))
+        if not result_e.scalar_one_or_none():
+            raise LookupError(f"Episodio con ID {id_episodio} no encontrado.")
+
+    # Validar que la evolución exista si se proporcionó
+    if id_evolucion:
+        result_ev = await db.execute(select(Evolucion).where(Evolucion.id_evolucion == id_evolucion))
+        if not result_ev.scalar_one_or_none():
+            raise LookupError(f"Evolución con ID {id_evolucion} no encontrada.")
 
     datos = paciente.datos_personales or {}
     paciente_nombre = datos.get("nombre", "Paciente Desconocido")

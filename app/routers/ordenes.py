@@ -78,7 +78,7 @@ async def listar_ordenes(
 @router.get(
     "/ordenes/{id_orden}",
     response_model=OrdenMedicaCompleta,
-    summary="Obtener detalles de orden (Smart Payload con alertas clínicas)",
+    summary="Obtener detalles de una orden (Smart Payload con alertas clínicas)",
     description=(
         "Endpoint utilizado por M4 y M5 para descargar la información clínica "
         "de la orden y las alertas de seguridad."
@@ -255,8 +255,7 @@ async def crear_orden(
     status_code=status.HTTP_201_CREATED,
     summary="Crear orden médica de laboratorio (M4)",
     description=(
-        "Crea una orden de laboratorio vinculando una lista de IDs de estudios del catálogo de M4. "
-        "Notifica de forma asíncrona a M4 mediante HTTP y publica el evento en Kafka."
+        "Crea una orden de laboratorio vinculando una lista de IDs de estudios del catálogo de M4."
     ),
     responses={
         401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
@@ -303,7 +302,7 @@ async def crear_orden_laboratorio(
     summary="Crear orden médica de imágenes diagnósticas (M5)",
     description=(
         "Crea una orden de diagnóstico por imágenes especificando la modalidad (subtipo). "
-        "Notifica de forma asíncrona a M5 mediante HTTP y publica el evento en Kafka."
+        "Si se asocia a un eposiodo (id_episodio) o evolución (id_evolucion), se requiere que existan en el sistema."
     ),
     responses={
         401: {"model": ErrorResponse, "description": "Token JWT ausente, inválido o expirado."},
