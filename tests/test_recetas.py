@@ -144,3 +144,54 @@ async def test_listar_medicamentos(client: AsyncClient, auth_headers: dict):
     assert filtered_meds[0]["nombre"] == "Amoxicilina 500mg"
 
 
+@pytest.mark.asyncio
+async def test_listar_recetas_filtrado_por_episodio(client: AsyncClient, db: AsyncSession, auth_headers: dict):
+    # 0. Crear un paciente de prueba
+    id_paciente = 1002
+    paciente = Paciente(id_paciente=id_paciente, datos_personales={"nombre": "Episodio Filter"})
+    db.add(paciente)
+    await db.commit()
+
+    # 1. Crear Episodio A y Evolución A
+    res_ep_a = await client.post(f"/api/v1/patients/{id_paciente}/episodes", headers=auth_headers, json={"tipo": "consulta-externa"})
+    id_episodio_a = res_ep_a.json()["id_episodio"]
+    res_ev_a = await client.post(f"/api/v1/patients/{id_paciente}/episodes/{id_episodio_a}/evoluciones", headers=auth_headers, json={"contenido": "A"})
+    id_evolucion_a = res_ev_a.json()["id_evolucion"]
+
+    # 2. Crear Episodio B y Evolución B
+    res_ep_b = await client.post(f"/api/v1/patients/{id_paciente}/episodes", headers=auth_headers, json={"tipo": "consulta-externa"})
+    id_episodio_b = res_ep_b.json()["id_episodio"]
+    res_ev_b = await client.post(f"/api/v1/patients/{id_paciente}/episodes/{id_episodio_b}/evoluciones", headers=auth_headers, json={"contenido": "B"})
+    id_evolucion_b = res_ev_b.json()["id_evolucion"]
+
+    # 3. Crear receta en Episodio A
+    await client.post(
+        f"/api/v1/patients/{id_paciente}/episodes/{id_episodio_a}/evoluciones/{id_evolucion_a}/recetas",
+        headers=auth_headers,
+        json={"items": [{"medicamento": "M1", "cantidad": 1}]}
+    )
+
+    # 4. Crear receta en Episodio B
+    await client.post(
+        f"/api/v1/patients/{id_paciente}/episodes/{id_episodio_b}/evoluciones/{id_evolucion_b}/recetas",
+        headers=auth_headers,
+        json={"items": [{"medicamento": "M2", "cantidad": 1}]}
+    )
+
+    # 5. Listar recetas filtradas por Episodio A
+    res_get_a = await client.get(f"/api/v1/recetas?id_episodio={id_episodio_a}", headers=auth_headers)
+    assert res_get_a.status_code == 200
+    recetas_a = res_get_a.json()["data"]
+    assert len(recetas_a) == 1
+    assert recetas_a[0]["id_evolucion"] == id_evolucion_a
+    assert recetas_a[0]["items"][0]["medicamento"] == "M1"
+
+    # 6. Listar recetas filtradas por Episodio B
+    res_get_b = await client.get(f"/api/v1/recetas?id_episodio={id_episodio_b}", headers=auth_headers)
+    assert res_get_b.status_code == 200
+    recetas_b = res_get_b.json()["data"]
+    assert len(recetas_b) == 1
+    assert recetas_b[0]["id_evolucion"] == id_evolucion_b
+    assert recetas_b[0]["items"][0]["medicamento"] == "M2"
+
+

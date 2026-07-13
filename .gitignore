@@ -9,3 +9,4 @@ skills-lock.json
 *.db
 .pytest_cache/
 seed_dev_data.sql
+scratch/

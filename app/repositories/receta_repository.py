@@ -33,6 +33,7 @@ class RecetaRepository(BaseRepository[Receta, RecetaCreate]):
         estado: Optional[str] = None,
         id_paciente: Optional[int] = None,
         desde_fecha: Optional[str] = None,
+        id_episodio: Optional[int] = None,
     ) -> list[Receta]:
         """Obtiene recetas aplicando filtros y cargando sus ítems."""
         query = select(Receta).options(selectinload(Receta.items))
@@ -43,6 +44,9 @@ class RecetaRepository(BaseRepository[Receta, RecetaCreate]):
             query = query.where(Receta.id_paciente == id_paciente)
         if desde_fecha:
             query = query.where(Receta.fecha_creacion >= desde_fecha)
+        if id_episodio:
+            from app.models.evolucion import Evolucion
+            query = query.join(Evolucion).where(Evolucion.id_episodio == id_episodio)
 
         result = await db.execute(query)
         return list(result.scalars().all())

@@ -24,10 +24,11 @@ async def get_recetas(
     estado: Optional[str] = None,
     id_paciente: Optional[int] = None,
     desde_fecha: Optional[date] = None,
+    id_episodio: Optional[int] = None,
 ) -> list[Receta]:
     """Obtener listado de recetas con filtros opcionales."""
     return await receta_repo.get_recetas_filtradas(
-        db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha
+        db, estado=estado, id_paciente=id_paciente, desde_fecha=desde_fecha, id_episodio=id_episodio
     )
 
 
