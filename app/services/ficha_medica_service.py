@@ -69,11 +69,55 @@ async def crear_ficha_medica_completa(
     id_medico: int,
 ) -> FichaMedicaCompletaResponse:
     """
-    Registrar de forma atómica la ficha médica, los antecedentes y las alertas clínicas de un paciente.
+    Registrar/actualizar de forma atómica la ficha médica, los antecedentes y las alertas clínicas de un paciente.
     Reutiliza los servicios correspondientes para aprovechar sus validaciones.
+    Sincroniza además los datos demográficos (dni, fecha_nacimiento, genero, obra_social) en el paciente.
     """
-    # 1. Crear ficha médica básica (valida existencia de paciente y unicidad de la ficha)
-    ficha = await crear_ficha_medica(db, id_paciente, data.ficha_medica)
+    # 0. Validar paciente y actualizar datos demográficos locales
+    paciente = await paciente_repo.get(db, id_paciente)
+    if not paciente:
+        raise LookupError(f"No existe el paciente con id {id_paciente}.")
+
+    datos = paciente.datos_personales or {}
+    updated = False
+    if data.dni is not None:
+        datos["dni"] = data.dni
+        updated = True
+    if data.fecha_nacimiento is not None:
+        datos["fecha_nacimiento"] = data.fecha_nacimiento
+        updated = True
+    if data.genero is not None:
+        datos["genero"] = data.genero
+        updated = True
+    if data.obra_social is not None:
+        datos["obra_social"] = data.obra_social
+        updated = True
+
+    if updated:
+        from sqlalchemy.orm.attributes import flag_modified
+        paciente.datos_personales = datos
+        flag_modified(paciente, "datos_personales")
+        db.add(paciente)
+
+    # 1. Crear o actualizar ficha médica básica
+    ficha = await ficha_medica_repo.get_by_paciente(db, id_paciente)
+    if not ficha:
+        ficha = await ficha_medica_repo.create(db, id_paciente, data.ficha_medica)
+    else:
+        update_data = FichaMedicaUpdate(
+            grupo_sanguineo=data.ficha_medica.grupo_sanguineo,
+            peso_kg=data.ficha_medica.peso_kg,
+            altura_cm=data.ficha_medica.altura_cm,
+            observaciones_generales=data.ficha_medica.observaciones_generales,
+        )
+        ficha = await ficha_medica_repo.update(db, ficha, update_data)
+
+    # Limpiar antecedentes y alertas previas del paciente en base de datos para reemplazo atómico
+    from app.models.antecedente_paciente import AntecedentePaciente
+    from app.models.alerta_clinica import AlertaClinicaPaciente
+    from sqlalchemy import delete
+    await db.execute(delete(AntecedentePaciente).where(AntecedentePaciente.id_paciente == id_paciente))
+    await db.execute(delete(AlertaClinicaPaciente).where(AlertaClinicaPaciente.id_paciente == id_paciente))
 
     # 2. Registrar Antecedentes
     antecedentes_creados = []

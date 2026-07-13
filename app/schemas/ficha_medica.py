@@ -60,6 +60,12 @@ class FichaMedicaCompletaCreate(BaseModel):
     antecedentes: List[AntecedenteCreate] = Field(default_factory=list)
     alertas_clinicas: List[AlertaCreate] = Field(default_factory=list)
 
+    # Campos demográficos opcionales del Paciente
+    dni: Optional[str] = Field(None, description="DNI del paciente")
+    fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento (YYYY-MM-DD)")
+    genero: Optional[str] = Field(None, description="Género/Sexo del paciente")
+    obra_social: Optional[str] = Field(None, description="Obra social o cobertura médica")
+
 
 class FichaMedicaCompletaResponse(BaseModel):
     """Schema de respuesta completo para la ficha médica consolidada con sus antecedentes y alertas."""

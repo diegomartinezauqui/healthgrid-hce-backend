@@ -124,7 +124,6 @@ async def actualizar_ficha_medica(
         401: {"model": ErrorResponse},
         403: {"model": ErrorResponse},
         404: {"model": ErrorResponse, "description": "Paciente no encontrado."},
-        409: {"model": ErrorResponse, "description": "Ya existe una ficha médica para este paciente."},
     },
 )
 async def crear_ficha_medica_completa(
@@ -136,11 +135,6 @@ async def crear_ficha_medica_completa(
     try:
         return await ficha_medica_service.crear_ficha_medica_completa(
             db, id_paciente, body, user.sub
-        )
-    except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail={"error": "CONFLICT", "message": str(e)},
         )
     except LookupError as e:
         raise HTTPException(

@@ -94,7 +94,7 @@ async def test_crear_ficha_medica_completa(client: AsyncClient, db: AsyncSession
 
 
 @pytest.mark.asyncio
-async def test_crear_ficha_medica_completa_duplicado(client: AsyncClient, db: AsyncSession, auth_headers: dict):
+async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: AsyncSession, auth_headers: dict):
     # 0. Crear un paciente
     id_paciente = 2002
     paciente = Paciente(id_paciente=id_paciente, datos_personales={"nombre": "Paciente Duplicado"})
@@ -108,26 +108,76 @@ async def test_crear_ficha_medica_completa_duplicado(client: AsyncClient, db: As
             "altura_cm": 160.0,
             "observaciones_generales": "Primera ficha."
         },
-        "antecedentes": [],
-        "alertas_clinicas": []
+        "antecedentes": [
+            {
+                "tipo": "Familiar",
+                "descripcion": "Polen",
+                "fecha_suceso": "2020-01-01"
+            }
+        ],
+        "alertas_clinicas": [
+            {
+                "tipo": "Alergia",
+                "severidad": "Leve",
+                "descripcion": "Polen"
+            }
+        ],
+        "dni": "99988877",
+        "fecha_nacimiento": "1990-05-15",
+        "genero": "M",
+        "obra_social": "OSDE 310"
     }
 
-    # Primera creación
+    # Primera creación y sincronización demográfica
     response1 = await client.post(
         f"/api/v1/pacientes/{id_paciente}/ficha-completa",
         json=payload,
         headers=auth_headers
     )
     assert response1.status_code == 201
+    
+    # Verificar que los datos demográficos se guardaron en la caché del paciente
+    await db.refresh(paciente)
+    assert paciente.datos_personales["dni"] == "99988877"
+    assert paciente.datos_personales["obra_social"] == "OSDE 310"
 
-    # Segunda creación (debería dar conflicto)
+    # Segunda llamada (actualización/upsert)
+    payload_update = {
+        "ficha_medica": {
+            "grupo_sanguineo": "A+",
+            "peso_kg": 70.0,
+            "altura_cm": 160.0,
+            "observaciones_generales": "Ficha actualizada."
+        },
+        "antecedentes": [
+            {
+                "tipo": "Quirurgico",
+                "descripcion": "Cesarea",
+                "fecha_suceso": "2022-03-10"
+            }
+        ],
+        "alertas_clinicas": [],
+        "obra_social": "Swiss Medical"
+    }
+
     response2 = await client.post(
         f"/api/v1/pacientes/{id_paciente}/ficha-completa",
-        json=payload,
+        json=payload_update,
         headers=auth_headers
     )
-    assert response2.status_code == 409
-    assert response2.json()["detail"]["error"] == "CONFLICT"
+    assert response2.status_code == 201
+    data2 = response2.json()
+    assert data2["ficha_medica"]["grupo_sanguineo"] == "A+"
+    assert data2["ficha_medica"]["observaciones_generales"] == "Ficha actualizada."
+    assert len(data2["antecedentes"]) == 1
+    assert data2["antecedentes"][0]["descripcion"] == "Cesarea"
+    assert len(data2["alertas_clinicas"]) == 0
+
+    # Verificar actualización demográfica en paciente
+    await db.refresh(paciente)
+    assert paciente.datos_personales["obra_social"] == "Swiss Medical"
+    # El DNI no debería haber cambiado porque no se envió en payload_update (None)
+    assert paciente.datos_personales["dni"] == "99988877"
 
 
 @pytest.mark.asyncio
