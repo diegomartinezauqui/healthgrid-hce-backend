@@ -108,17 +108,21 @@ async def crear_ficha_medica_completa(
         )
         cobertura = result_cob.scalar_one_or_none()
         nombre_cob = data.obra_social or "Obra Social"
+        # codigo_plan almacena el ID del plan de M7 como string
+        codigo_plan = str(data.id_plan) if data.id_plan is not None else None
 
         if not cobertura:
             cobertura = CoberturaMedica(
                 id_paciente=id_paciente,
                 id_obra_social=data.id_obra_social,
                 nombre_obra_social=nombre_cob,
+                codigo_plan=codigo_plan,
                 numero_afiliado=data.numero_afiliado,
             )
         else:
             cobertura.id_obra_social = data.id_obra_social
             cobertura.nombre_obra_social = nombre_cob
+            cobertura.codigo_plan = codigo_plan
             cobertura.numero_afiliado = data.numero_afiliado
 
         db.add(cobertura)

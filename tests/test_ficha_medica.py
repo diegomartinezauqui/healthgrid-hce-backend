@@ -127,6 +127,7 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
         "genero": "M",
         "obra_social": "OSDE 310",
         "id_obra_social": 1,
+        "id_plan": 2,
         "numero_afiliado": "1234567890"
     }
 
@@ -148,7 +149,8 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
     q_cob = await db.execute(select(CoberturaMedica).where(CoberturaMedica.id_paciente == id_paciente))
     cob = q_cob.scalar_one_or_none()
     assert cob is not None
-    assert cob.id_obra_social == 1
+    assert cob.id_obra_social == 1  # Entidad Financiadora
+    assert cob.codigo_plan == "2"   # ID del Plan de M7
     assert cob.numero_afiliado == "1234567890"
 
     # Segunda llamada (actualización/upsert)
@@ -167,8 +169,9 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
             }
         ],
         "alertas_clinicas": [],
-        "obra_social": "Swiss Medical",
+        "obra_social": "Swiss Medical SMG02",
         "id_obra_social": 2,
+        "id_plan": 3,
         "numero_afiliado": "0987654321"
     }
 
@@ -187,13 +190,14 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
 
     # Verificar actualización demográfica en paciente
     await db.refresh(paciente)
-    assert paciente.datos_personales["obra_social"] == "Swiss Medical"
+    assert paciente.datos_personales["obra_social"] == "Swiss Medical SMG02"
     # El DNI no debería haber cambiado porque no se envió en payload_update (None)
     assert paciente.datos_personales["dni"] == "99988877"
 
     # Verificar actualización de cobertura médica en cache local
     await db.refresh(cob)
-    assert cob.id_obra_social == 2
+    assert cob.id_obra_social == 2     # Entidad Financiadora actualizada
+    assert cob.codigo_plan == "3"       # ID del Plan actualizado
     assert cob.numero_afiliado == "0987654321"
 
 
