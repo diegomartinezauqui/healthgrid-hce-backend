@@ -100,7 +100,7 @@ async def crear_ficha_medica_completa(
         db.add(paciente)
 
     # Sincronizar Cobertura Médica (obra social / prepaga) en caché local
-    if data.id_obra_social is not None:
+    if data.id_obra_social is not None or data.id_plan is not None:
         from app.models.cobertura_medica import CoberturaMedica
         from sqlalchemy import select
         result_cob = await db.execute(
