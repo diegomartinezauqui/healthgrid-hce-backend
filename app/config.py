@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "postgresql+asyncpg://hce_user:hce_pass@localhost:5432/hce_db"
     DB_ECHO: bool = False
 
+    # ─── API Gateway ──────────────────────────────────────────────
+    ENABLE_GATEWAY_VALIDATION: bool = False
+    GATEWAY_API_KEY: str = "hce-secret-key"
+
     # ─── CORS ─────────────────────────────────────────────────────
     # Orígenes permitidos separados por coma. En producción colocar
     # exclusivamente el dominio del frontend desplegado.
@@ -52,9 +56,9 @@ class Settings(BaseSettings):
     # ─── URLs de otros módulos ────────────────────────────────────
     CORE_BASE_URL: str = "http://localhost:8010/api/v1"
     M6_BASE_URL: str = "http://localhost:8006/api"
-    M5_BASE_URL: str = "https://uade-da2-backend.onrender.com"
+    M5_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/imaging"
     M4_BASE_URL: str = "http://localhost:8004/api"
-    M7_BASE_URL: str = "https://modulo7-backend.onrender.com"
+    M7_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/billing"
     M2_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/appointments/apps2/api/v1"
     HCE_PUBLIC_URL: str = "http://localhost:8000"
 

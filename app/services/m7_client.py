@@ -72,7 +72,7 @@ async def notificar_prestacion(
     """
     payload = {
         "moduloOrigen": "HCE",
-        "pacienteIdExterno": str(id_paciente),
+        "pacienteIdExterno": id_paciente,
         "profesionalIdExterno": str(id_profesional),
         "planId": plan_id,
         "codigoPrestacion": codigo_prestacion,
