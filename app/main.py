@@ -5,11 +5,12 @@ Configura routers, lifespan y middleware.
 
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
 from app.config import settings
+from app.dependencies import verify_gateway_api_key
 from app.kafka.consumer import start_kafka_consumer
 from app.services.kafka_producer import kafka_producer
 import asyncio
@@ -74,6 +75,7 @@ app = FastAPI(
         "Gestiona consultas, diagnósticos, tratamientos y fichas médicas."
     ),
     version="1.0.0",
+    dependencies=[Depends(verify_gateway_api_key)],
     lifespan=lifespan,
     root_path="",
 )
