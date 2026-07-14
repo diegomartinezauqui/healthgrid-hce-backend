@@ -66,6 +66,7 @@ async def crear_orden(
     estudio_ids: Optional[list[int]] = None,
     subtipo: Optional[SubtipoEstudio] = None,
     origen: Optional[OrigenOrden] = OrigenOrden.AMBULATORIO,
+    token_auth: Optional[str] = None,
 ) -> Orden:
     """
     Crear una nueva orden médica de estudio y publicar el evento Kafka
@@ -166,6 +167,7 @@ async def crear_orden(
                 id_paciente=id_paciente,
                 descripcion=descripcion_pedido,
                 subtipo=subtipo.value if subtipo and hasattr(subtipo, "value") else str(subtipo) if subtipo else None,
+                token_auth=token_auth,
             )
         )
 

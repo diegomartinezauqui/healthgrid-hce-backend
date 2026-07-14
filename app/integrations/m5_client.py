@@ -19,25 +19,46 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
-async def notificar_orden(id_orden: int, id_paciente: int, descripcion: str | None = None, subtipo: str | None = None) -> dict:
+async def notificar_orden(
+    id_orden: int,
+    id_paciente: int,
+    descripcion: str | None = None,
+    subtipo: str | None = None,
+    token_auth: str | None = None,
+) -> dict:
     """Avisar a M5 que hay una orden de imagen nueva/modificada para que la procese."""
     payload = {
-        "id_orden_hce": id_orden,
-        "id_paciente": id_paciente,
-        "descripcion": descripcion,
-        "subtipo": subtipo,
-        "modulo_origen": "modulo1_hce",
+        "type": "ORDER",
+        "id": str(id_orden),
     }
     if settings.integraciones_mockeadas:
-        logger.info("🧪 [MOCK M5] Notificando orden de imagen: %s", payload)
+        logger.warning("🧪 [MOCK M5] Notificando orden de imagen: %s", payload)
         return {"status": "received", "mock": True, **payload}
 
     import httpx
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(f"{settings.M5_BASE_URL}/v1/webhook/orders", json=payload)
-        resp.raise_for_status()
-        return resp.json()
+    headers = {
+        "Content-Type": "application/json",
+    }
+    if token_auth:
+        headers["Authorization"] = token_auth
+
+    url = f"{settings.M5_BASE_URL.rstrip('/')}/v1/webhook/notifications"
+    logger.warning("📡 [M5] Notificando orden a M5: %s", url)
+
+    async with httpx.AsyncClient(timeout=60.0) as client:
+        try:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.warning("✅ [M5] Notificación de orden %s enviada con éxito: %s", id_orden, data)
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M5] Error al notificar orden %s: %s - %s", id_orden, exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M5 al notificar orden: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M5] Error de red al conectar con M5: %s", exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 5 (Imágenes): {exc}") from exc
 
 
 async def obtener_reporte(report_id: str) -> dict:
@@ -57,7 +78,7 @@ async def obtener_reporte(report_id: str) -> dict:
 
     import httpx
 
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=60.0) as client:
         resp = await client.get(
             f"{settings.M5_BASE_URL}/v1/webhook/reportById", params={"reportId": report_id}
         )

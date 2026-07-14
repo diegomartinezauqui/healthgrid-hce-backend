@@ -8,6 +8,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.auth.permissions import require_permission
+from app.auth.jwt_handler import security, HTTPAuthorizationCredentials
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.alerta import AlertaSmartPayload
@@ -328,8 +329,10 @@ async def crear_orden_imagenes(
     body: OrdenImagenCreate,
     db: DbSession,
     _user=Depends(require_permission("hce:ordenes:write")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     try:
+        token_auth = f"Bearer {credentials.credentials}" if credentials else None
         orden = await orden_service.crear_orden(
             db,
             id_paciente=id_paciente,
@@ -341,6 +344,7 @@ async def crear_orden_imagenes(
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
             subtipo=body.subtipo,
             origen=body.origen,
+            token_auth=token_auth,
         )
         return OrdenCreatedResponse(
             status="success",

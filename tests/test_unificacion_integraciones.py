@@ -304,13 +304,28 @@ async def test_crear_orden_imagenes_endpoint(
         "descripcion_pedido": "Placa de tórax AP",
         "prioridad": "Urgente",
     }
-    res = await client.post(
-        "/api/v1/pacientes/7788/ordenes/imagenes",
-        headers=auth_headers,
-        json=payload,
-    )
+    
+    import asyncio
+    from unittest.mock import patch, ANY
+    
+    with patch("app.integrations.m5_client.notificar_orden") as mock_notificar:
+        res = await client.post(
+            "/api/v1/pacientes/7788/ordenes/imagenes",
+            headers=auth_headers,
+            json=payload,
+        )
     assert res.status_code == 201
     id_orden = res.json()["id_orden"]
+
+    # Darle un momento a asyncio.create_task para ejecutar la llamada de fondo
+    await asyncio.sleep(0.05)
+    mock_notificar.assert_called_once_with(
+        id_orden=id_orden,
+        id_paciente=7788,
+        descripcion="Placa de tórax AP",
+        subtipo="RADIOLOGY",
+        token_auth=ANY
+    )
 
     # 3. Verificar persistencia de la orden
     q = await db.execute(select(Orden).where(Orden.id_orden == id_orden))
