@@ -103,7 +103,7 @@ async def notificar_prestacion(
     try:
         import httpx
 
-        url = f"{settings.M7_BASE_URL}/api/integracion/prestaciones"
+        url = f"{settings.M7_BASE_URL.rstrip('/')}/integracion/prestaciones"
         headers = {
             "Content-Type": "application/json",
             "x-api-key": "billing-secret-key",
@@ -111,6 +111,7 @@ async def notificar_prestacion(
         if token:
             headers["Authorization"] = f"Bearer {token}"
 
+        logger.info("📡 [M7] POST %s -> %s", url, payload)
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.post(url, json=payload, headers=headers)
 
@@ -182,7 +183,7 @@ async def buscar_prestaciones_nomenclador(
     try:
         import httpx
 
-        url = f"{settings.M7_BASE_URL}/api/prestaciones-nomenclador"
+        url = f"{settings.M7_BASE_URL.rstrip('/')}/prestaciones-nomenclador"
         headers = {
             "Content-Type": "application/json",
             "x-api-key": "billing-secret-key",
@@ -247,7 +248,7 @@ async def buscar_entidades_financiadoras(
     try:
         import httpx
 
-        url = f"{settings.M7_BASE_URL}/api/entidades-financiadoras"
+        url = f"{settings.M7_BASE_URL.rstrip('/')}/entidades-financiadoras"
         headers = {
             "Content-Type": "application/json",
             "x-api-key": "billing-secret-key",
@@ -309,7 +310,7 @@ async def buscar_planes(
     try:
         import httpx
 
-        url = f"{settings.M7_BASE_URL}/api/planes"
+        url = f"{settings.M7_BASE_URL.rstrip('/')}/planes"
         headers = {
             "Content-Type": "application/json",
             "x-api-key": "billing-secret-key",
