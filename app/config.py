@@ -17,6 +17,7 @@ class Settings(BaseSettings):
 
     # ─── Base de datos ────────────────────────────────────────────
     DATABASE_URL: str = "postgresql+asyncpg://hce_user:hce_pass@localhost:5432/hce_db"
+    DB_ECHO: bool = False
 
     # ─── CORS ─────────────────────────────────────────────────────
     # Orígenes permitidos separados por coma. En producción colocar
