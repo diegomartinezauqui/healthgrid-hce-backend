@@ -141,14 +141,14 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
     assert data_llamado["consultorio"] == 204
 
     # 6. Atender a Paciente Dos (se crea y asocia el episodio aquí)
-    from unittest.mock import patch
+    from unittest.mock import patch, ANY
     with patch("app.integrations.m2_client.iniciar_turno") as mock_iniciar:
         res_atender = await client.patch(
             f"/api/v1/sala-espera/{id_espera_2}/atender",
             headers=auth_headers
         )
     assert res_atender.status_code == 200
-    mock_iniciar.assert_called_once_with(50002)
+    mock_iniciar.assert_called_once_with(50002, token_auth=ANY)
     data_atendido = res_atender.json()
     assert data_atendido["estado"] == "Atendido"
     assert data_atendido["id_episodio"] is not None
@@ -169,7 +169,7 @@ async def test_sala_espera_flow(client: AsyncClient, db: AsyncSession, auth_head
             headers=auth_headers
         )
     assert res_finalizar.status_code == 200
-    mock_finalizar.assert_called_once_with(50002)
+    mock_finalizar.assert_called_once_with(50002, token_auth=ANY)
     assert res_finalizar.json()["estado"] == "Finalizado"
 
     # 7. Marcar Ausente a Paciente Uno

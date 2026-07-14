@@ -109,6 +109,7 @@ async def atender_paciente(
     db: AsyncSession,
     id_espera: int,
     id_episodio: Optional[int] = None,
+    token_auth: Optional[str] = None,
 ) -> Optional[SalaEspera]:
     """
     Cambia el estado del registro a Atendido.
@@ -150,7 +151,7 @@ async def atender_paciente(
     if registro.id_turno_m2:
         from app.integrations import m2_client
         try:
-            res = await m2_client.iniciar_turno(registro.id_turno_m2)
+            res = await m2_client.iniciar_turno(registro.id_turno_m2, token_auth=token_auth)
             logger.warning("✅ [M2] Notificación de inicio de turno exitosa para turno %s: %s", registro.id_turno_m2, res)
         except Exception as exc:
             logger.error("⚠️ [M2] No se pudo notificar inicio de turno %s: %s", registro.id_turno_m2, exc)
@@ -198,6 +199,7 @@ async def actualizar_prioridad(
 async def finalizar_paciente(
     db: AsyncSession,
     id_espera: int,
+    token_auth: Optional[str] = None,
 ) -> Optional[SalaEspera]:
     """Cambia el estado del registro a Finalizado cuando concluye la atención."""
     registro = await sala_espera_repo.get(db, id_espera)
@@ -210,7 +212,7 @@ async def finalizar_paciente(
     if registro.id_turno_m2:
         from app.integrations import m2_client
         try:
-            res = await m2_client.finalizar_turno(registro.id_turno_m2)
+            res = await m2_client.finalizar_turno(registro.id_turno_m2, token_auth=token_auth)
             logger.warning("✅ [M2] Notificación de finalización de turno exitosa para turno %s: %s", registro.id_turno_m2, res)
         except Exception as exc:
             logger.error("⚠️ [M2] No se pudo notificar finalización de turno %s: %s", registro.id_turno_m2, exc)

@@ -7,6 +7,7 @@ from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.permissions import require_permission
+from app.auth.jwt_handler import security, HTTPAuthorizationCredentials
 from app.dependencies import DbSession
 from app.schemas.common import ErrorResponse
 from app.schemas.sala_espera import (
@@ -123,10 +124,12 @@ async def atender_paciente(
     db: DbSession,
     body: Optional[SalaEsperaAtender] = None,
     _user=Depends(require_permission("hce:episodes:write")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     try:
         id_episodio = body.id_episodio if body else None
-        registro = await sala_espera_service.atender_paciente(db, id_espera, id_episodio=id_episodio)
+        token_auth = f"Bearer {credentials.credentials}" if credentials else None
+        registro = await sala_espera_service.atender_paciente(db, id_espera, id_episodio=id_episodio, token_auth=token_auth)
         if not registro:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -206,8 +209,10 @@ async def finalizar_paciente(
     id_espera: int,
     db: DbSession,
     _user=Depends(require_permission("hce:episodes:write")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
-    registro = await sala_espera_service.finalizar_paciente(db, id_espera)
+    token_auth = f"Bearer {credentials.credentials}" if credentials else None
+    registro = await sala_espera_service.finalizar_paciente(db, id_espera, token_auth=token_auth)
     if not registro:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
