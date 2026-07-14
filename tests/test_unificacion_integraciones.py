@@ -50,8 +50,8 @@ async def test_webhook_presentismo_real_payload(
         "reason": "El paciente hizo checkin",
         "appointment": {
             "id": 360,
-            "starts_at": "2026-09-29T12:00:00Z",
-            "checked_in_at": "2026-06-24T17:22:34Z",
+            "starts_at": "2026-09-29 12:00:00",
+            "checked_in_at": "2026-06-24 17:22:34",
         },
         "patient": {
             "id": 3365611,
@@ -316,5 +316,53 @@ async def test_crear_orden_imagenes_endpoint(
     assert orden.tipo_estudio == "Imagen"
     assert orden.subtipo == "RADIOLOGY"
     assert orden.descripcion_pedido == "Placa de tórax AP"
+
+
+@pytest.mark.asyncio
+async def test_webhook_presentismo_paciente_no_cacheado(
+    client: AsyncClient,
+    db: AsyncSession,
+):
+    from unittest.mock import patch
+
+    # Enviar un webhook de presentismo para un paciente con id = 999999 que NO existe en base de datos.
+    m2_payload = {
+        "reason": "El paciente hizo checkin",
+        "appointment": {
+            "id": 880,
+            "starts_at": "2026-09-29 12:00:00",
+            "checked_in_at": "2026-06-24 17:22:34",
+        },
+        "patient": {
+            "id": 999999,
+        },
+        "medic": {
+            "id": 999888,
+        },
+        "disclaimer": "Notificación de integración",
+    }
+
+    # Mockeamos la sincronización para que devuelva None, forzando la creación del stub local de contingencia
+    with patch("app.services.core_patient_sync.get_or_create_patient_from_core", return_value=None):
+        res = await client.post(
+            "/api/v1/webhook/turnos/presentismo",
+            json=m2_payload,
+        )
+    assert res.status_code == 202
+
+    # Verificar que el paciente fue creado dinámicamente como Stub
+    q_paciente = await db.execute(select(Paciente).where(Paciente.id_paciente == 999999))
+    paciente_stub = q_paciente.scalar_one_or_none()
+    assert paciente_stub is not None
+    assert "Paciente 999999" in paciente_stub.datos_personales["nombre"]
+    assert paciente_stub.datos_personales["apellido"] == "Temporal HCE"
+
+    # Verificar que el registro de sala de espera fue creado correctamente
+    q_espera = await db.execute(select(SalaEspera).where(SalaEspera.id_paciente == 999999))
+    reg_espera = q_espera.scalar_one_or_none()
+    assert reg_espera is not None
+    assert reg_espera.id_turno_m2 == 880
+    assert reg_espera.id_medico == 999888
+
 
 

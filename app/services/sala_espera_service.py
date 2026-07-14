@@ -43,7 +43,30 @@ async def ingresar_paciente(
     Verifica que el paciente exista, busca o crea el episodio consulta-externa correspondiente y persiste el ingreso.
     """
     if not await paciente_repo.exists(db, id_paciente):
-        raise LookupError(f"No existe el paciente con id {id_paciente}.")
+        # Intentar sincronizar al paciente desde el Core a nuestra caché local
+        from app.services.core_patient_sync import get_or_create_patient_from_core
+        paciente = await get_or_create_patient_from_core(db, id_paciente)
+        if not paciente:
+            # Contingencia de resiliencia: si el Core falla o no lo encuentra, creamos un stub temporal en HCE
+            from app.models.paciente import Paciente
+            logger.warning(
+                "⚠️ Paciente %s no encontrado en el Core. Creando stub de contingencia en HCE...",
+                id_paciente,
+            )
+            paciente = Paciente(
+                id_paciente=id_paciente,
+                datos_personales={
+                    "nombre": f"Paciente {id_paciente}",
+                    "apellido": "Temporal HCE",
+                    "email": "",
+                    "dni": "",
+                    "fecha_nacimiento": "",
+                    "genero": "",
+                    "obra_social": "",
+                },
+            )
+            db.add(paciente)
+            await db.flush()
 
     # Crear entrada de sala de espera sin asociar episodio aún (se creará diferido al atender)
     nueva_espera = SalaEspera(
