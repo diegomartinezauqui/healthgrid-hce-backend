@@ -53,7 +53,8 @@ class Settings(BaseSettings):
     M6_BASE_URL: str = "http://localhost:8006/api"
     M5_BASE_URL: str = "https://uade-da2-backend.onrender.com"
     M4_BASE_URL: str = "http://localhost:8004/api"
-    M7_BASE_URL: str = "http://localhost:8007"
+    M7_BASE_URL: str = "https://modulo7-backend.onrender.com"
+    M2_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/appointments/apps2/api/v1"
     HCE_PUBLIC_URL: str = "http://localhost:8000"
 
     # ─── Bus de eventos del Core (RabbitMQ + POST /events/log) ────
