@@ -150,7 +150,8 @@ async def atender_paciente(
     if registro.id_turno_m2:
         from app.integrations import m2_client
         try:
-            await m2_client.iniciar_turno(registro.id_turno_m2)
+            res = await m2_client.iniciar_turno(registro.id_turno_m2)
+            logger.warning("✅ [M2] Notificación de inicio de turno exitosa para turno %s: %s", registro.id_turno_m2, res)
         except Exception as exc:
             logger.error("⚠️ [M2] No se pudo notificar inicio de turno %s: %s", registro.id_turno_m2, exc)
 
@@ -209,7 +210,8 @@ async def finalizar_paciente(
     if registro.id_turno_m2:
         from app.integrations import m2_client
         try:
-            await m2_client.finalizar_turno(registro.id_turno_m2)
+            res = await m2_client.finalizar_turno(registro.id_turno_m2)
+            logger.warning("✅ [M2] Notificación de finalización de turno exitosa para turno %s: %s", registro.id_turno_m2, res)
         except Exception as exc:
             logger.error("⚠️ [M2] No se pudo notificar finalización de turno %s: %s", registro.id_turno_m2, exc)
 
