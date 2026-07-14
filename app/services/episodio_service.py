@@ -170,6 +170,7 @@ async def registrar_acto_medico(
     id_episodio: int,
     data: ActoMedicoCreate,
     id_profesional_default: int,
+    token: Optional[str] = None,
 ) -> ActoMedico:
     """
     Registra un acto médico dentro de un episodio activo.
@@ -210,6 +211,7 @@ async def registrar_acto_medico(
             id_episodio=id_episodio,
             id_profesional=id_profesional_final,
             fecha_realizacion=fecha_realizacion_final,
+            token=token,
         )
 
     return acto
@@ -290,6 +292,7 @@ async def _notificar_m7(
     id_episodio: int,
     id_profesional: int,
     fecha_realizacion: datetime,
+    token: Optional[str] = None,
 ) -> None:
     """
     Busca la cobertura médica vigente del paciente y llama a m7_client
@@ -333,9 +336,10 @@ async def _notificar_m7(
             plan_id=plan_id,
             codigo_prestacion=acto.codigo_nomenclador,
             numero_afiliado=cobertura.numero_afiliado,
-            fecha_atencion=fecha_realizacion.isoformat(),
+            fecha_atencion=fecha_realizacion.strftime("%Y-%m-%dT%H:%M:%S"),
             cantidad=acto.cantidad,
             observaciones=acto.observaciones,
+            token=token,
         )
     except RuntimeError as exc:
         # M7 no disponible o rechazó la llamada — se loguea, no bloquea

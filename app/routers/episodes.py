@@ -234,12 +234,16 @@ async def crear_acto_medico(
     id_paciente: int,
     id_episodio: int,
     body: ActoMedicoCreate,
+    request: Request,
     db: DbSession,
     user=Depends(require_permission("hce:medical-acts:write")),
 ):
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.replace("Bearer ", "") if auth_header else None
+
     try:
         acto = await episodio_service.registrar_acto_medico(
-            db, id_paciente, id_episodio, body, id_profesional_default=user.sub
+            db, id_paciente, id_episodio, body, id_profesional_default=user.sub, token=token
         )
         return ActoMedicoSchema.model_validate(acto)
     except LookupError as e:
