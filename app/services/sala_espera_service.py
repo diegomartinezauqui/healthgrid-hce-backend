@@ -146,6 +146,14 @@ async def atender_paciente(
 
     registro.estado = EstadoSalaEspera.ATENDIDO
     
+    # Notificar inicio de turno al Módulo 2 (Turnos) de forma resiliente
+    if registro.id_turno_m2:
+        from app.integrations import m2_client
+        try:
+            await m2_client.iniciar_turno(registro.id_turno_m2)
+        except Exception as exc:
+            logger.error("⚠️ [M2] No se pudo notificar inicio de turno %s: %s", registro.id_turno_m2, exc)
+
     await db.flush()
     return registro
 
@@ -196,6 +204,15 @@ async def finalizar_paciente(
         return None
 
     registro.estado = EstadoSalaEspera.FINALIZADO
+    
+    # Notificar finalización de turno al Módulo 2 (Turnos) de forma resiliente
+    if registro.id_turno_m2:
+        from app.integrations import m2_client
+        try:
+            await m2_client.finalizar_turno(registro.id_turno_m2)
+        except Exception as exc:
+            logger.error("⚠️ [M2] No se pudo notificar finalización de turno %s: %s", registro.id_turno_m2, exc)
+
     await db.flush()
     return registro
 
