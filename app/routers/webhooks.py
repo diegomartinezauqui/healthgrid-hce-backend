@@ -32,6 +32,7 @@ async def webhook_presentismo(body: M2CheckinWebhook):
         "id_paciente": body.patient.id,
         "id_profesional": str(body.medic.id),
         "fecha_hora_llegada": body.appointment.checked_in_at,
+        "fecha_turno": body.appointment.starts_at,
         "motivo_turno": body.reason,
     }
 

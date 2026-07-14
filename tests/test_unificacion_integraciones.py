@@ -74,6 +74,8 @@ async def test_webhook_presentismo_real_payload(
     assert reg_espera is not None
     assert reg_espera.id_turno_m2 == 360
     assert reg_espera.id_medico == 136156
+    assert reg_espera.fecha_turno is not None
+    assert reg_espera.fecha_turno.strftime("%Y-%m-%d %H:%M:%S") == "2026-09-29 12:00:00"
     assert reg_espera.estado.value == "Esperando"
 
 
@@ -363,6 +365,8 @@ async def test_webhook_presentismo_paciente_no_cacheado(
     assert reg_espera is not None
     assert reg_espera.id_turno_m2 == 880
     assert reg_espera.id_medico == 999888
+    assert reg_espera.fecha_turno is not None
+    assert reg_espera.fecha_turno.strftime("%Y-%m-%d %H:%M:%S") == "2026-09-29 12:00:00"
 
 
 

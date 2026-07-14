@@ -90,6 +90,7 @@ class EventoKafkaPresentismo(BaseModel):
     id_paciente: int = Field(..., examples=[10500])
     id_profesional: str = Field(..., examples=["MP-12345"])
     fecha_hora_llegada: datetime = Field(..., examples=["2026-04-17T09:15:00Z"])
+    fecha_turno: Optional[datetime] = Field(None, examples=["2026-04-17T09:00:00Z"])
     motivo_turno: Optional[str] = Field(None, examples=["Control post-operatorio"])
 
 
