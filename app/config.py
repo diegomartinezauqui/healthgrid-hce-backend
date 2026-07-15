@@ -57,7 +57,7 @@ class Settings(BaseSettings):
     CORE_BASE_URL: str = "http://localhost:8010/api/v1"
     M6_BASE_URL: str = "http://localhost:8006/api"
     M5_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/imaging"
-    M4_BASE_URL: str = "http://localhost:8004/api"
+    M4_BASE_URL: str = "https://modulo-laboratorio.up.railway.app/"
     M7_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/billing"
     M2_BASE_URL: str = "https://gw.healthcare.cantero.ar/api/appointments/apps2/api/v1"
     HCE_PUBLIC_URL: str = "http://localhost:8000"

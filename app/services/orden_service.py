@@ -145,8 +145,18 @@ async def crear_orden(
     # Integración REST de salida con los módulos M4 y M5
     import asyncio
     from app.integrations import m4_client, m5_client
+
+    alertas_clinicas = await get_alertas_clinicas_paciente(db, id_paciente)
     
     if tipo_estudio == TipoEstudio.LABORATORIO:
+        alertas_payload = [
+            {
+                "tipo": alerta.tipo.value if hasattr(alerta.tipo, "value") else str(alerta.tipo),
+                "severidad": alerta.severidad.value if hasattr(alerta.severidad, "value") else str(alerta.severidad),
+                "descripcion": alerta.descripcion,
+            }
+            for alerta in alertas_clinicas
+        ]
         asyncio.create_task(
             m4_client.notificar_orden_laboratorio(
                 id_orden=orden.id_orden,
@@ -155,9 +165,10 @@ async def crear_orden(
                 paciente_dni=paciente_dni,
                 paciente_edad=paciente_edad,
                 paciente_sexo=paciente_sexo,
-                medico_id=id_medico_solicitante or 1,
-                estudio_ids=estudio_ids or [],
                 prioridad=prioridad.value if hasattr(prioridad, "value") else str(prioridad),
+                descripcion_pedido=descripcion_pedido,
+                token_auth=token_auth,
+                alertas_clinicas=alertas_payload,
             )
         )
     elif tipo_estudio == TipoEstudio.IMAGEN:

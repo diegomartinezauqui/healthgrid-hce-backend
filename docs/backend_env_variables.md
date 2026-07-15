@@ -12,6 +12,14 @@ M4_BASE_URL=http://localhost:8004/api
 M7_BASE_URL=http://localhost:8007
 HCE_PUBLIC_URL=http://localhost:8000
 
+## ─── Integración con M4 (Laboratorio) ────────────────────────
+
+La integración con Laboratorio usa el catálogo de estudios y, opcionalmente, el catálogo de analitos para enriquecer la selección clínica.
+
+* **`GET /v1/estudios`**: catálogo principal de estudios disponibles para crear órdenes.
+* **`GET /v1/analitos`**: catálogo opcional de analitos disponibles, con filtro por categoría.
+* **`POST /v1/ordenes/hce`**: ingesta de órdenes creadas en HCE hacia M4.
+
 ## 🔑 1. Variables del Servidor y Base de Datos
 
 * **`DATABASE_URL`**:

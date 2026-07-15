@@ -21,6 +21,7 @@ from app.schemas.orden import (
     OrdenImagenCreate,
 )
 from common.enums.enums_orden import TipoEstudio, OrigenOrden
+from app.integrations import m4_client
 from app.services import orden_service, resultado_service
 from app.schemas.resultado import ResultadoEstudioResumen
 
@@ -84,6 +85,37 @@ async def listar_ordenes(
         )
 
     return OrdenListResponse(status="success", cantidad=len(data), data=data)
+
+
+@router.get(
+    "/m4/estudios",
+    summary="Consultar catálogo de estudios de M4",
+    description="Proxy desde HCE para recuperar el catálogo de estudios disponible en el Módulo 4.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+    },
+)
+async def listar_estudios_m4(
+    _user=Depends(require_permission("hce:ordenes:read")),
+):
+    return await m4_client.obtener_estudios()
+
+
+@router.get(
+    "/m4/analitos",
+    summary="Consultar catálogo de analitos de M4",
+    description="Proxy desde HCE para recuperar el catálogo de analitos disponible en el Módulo 4.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+    },
+)
+async def listar_analitos_m4(
+    categoria: Optional[str] = None,
+    _user=Depends(require_permission("hce:ordenes:read")),
+):
+    return await m4_client.obtener_analitos(categoria=categoria)
 
 
 @router.get(
@@ -282,8 +314,10 @@ async def crear_orden_laboratorio(
     body: OrdenLaboratorioCreate,
     db: DbSession,
     _user=Depends(require_permission("hce:ordenes:write")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     try:
+        token_auth = f"Bearer {credentials.credentials}" if credentials else None
         orden = await orden_service.crear_orden(
             db,
             id_paciente=id_paciente,
@@ -295,6 +329,7 @@ async def crear_orden_laboratorio(
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
             estudio_ids=body.estudio_ids,
             origen=body.origen,
+            token_auth=token_auth,
         )
         return OrdenCreatedResponse(
             status="success",
