@@ -57,10 +57,22 @@ async def notificar_orden_hce(
     if token_auth:
         headers["Authorization"] = token_auth
 
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/ordenes/hce"
+    logger.info("📡 [M4] Notificando orden %s a M4: %s", id_orden, url)
+
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes/hce", json=payload, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M4] Orden %s notificada exitosamente a M4: %s", id_orden, data)
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M4] Error HTTP al notificar orden %s a M4: %s - %s", id_orden, exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M4 al notificar orden: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M4] Error de red al notificar orden %s a M4: %s", id_orden, exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 4 (Laboratorio): {exc}") from exc
 
 
 async def notificar_orden_laboratorio(
@@ -113,10 +125,22 @@ async def notificar_orden_laboratorio(
     if token_auth:
         headers["Authorization"] = token_auth
 
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/ordenes"
+    logger.info("📡 [M4] Notificando orden legada %s a M4: %s", id_orden, url)
+
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes", json=payload, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M4] Orden legada %s notificada exitosamente a M4: %s", id_orden, data)
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M4] Error HTTP al notificar orden legada %s a M4: %s - %s", id_orden, exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M4 al notificar orden: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M4] Error de red al notificar orden legada %s a M4: %s", id_orden, exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 4 (Laboratorio): {exc}") from exc
 
 
 async def obtener_analitos(
@@ -184,10 +208,22 @@ async def obtener_analitos(
     if token_auth:
         headers["Authorization"] = token_auth
 
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/analitos"
+    logger.info("📡 [M4] Obteniendo analitos de M4: %s", url)
+
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/analitos", params=params, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.get(url, params=params, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M4] Analitos obtenidos exitosamente de M4: %s items", len(data))
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M4] Error HTTP al obtener analitos de M4: %s - %s", exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M4 al obtener analitos: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M4] Error de red al obtener analitos de M4: %s", exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 4 (Laboratorio): {exc}") from exc
 
 
 async def obtener_estudios(token_auth: Optional[str] = None) -> List[dict]:
@@ -220,10 +256,22 @@ async def obtener_estudios(token_auth: Optional[str] = None) -> List[dict]:
     if token_auth:
         headers["Authorization"] = token_auth
 
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/estudios"
+    logger.info("📡 [M4] Obteniendo estudios (legado) de M4: %s", url)
+
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/estudios", headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M4] Estudios (legado) obtenidos exitosamente de M4: %s items", len(data))
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M4] Error HTTP al obtener estudios (legado) de M4: %s - %s", exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M4 al obtener estudios: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M4] Error de red al obtener estudios (legado) de M4: %s", exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 4 (Laboratorio): {exc}") from exc
 
 
 async def obtener_ordenes(query_params: dict, token_auth: Optional[str] = None) -> dict:
@@ -254,7 +302,19 @@ async def obtener_ordenes(query_params: dict, token_auth: Optional[str] = None) 
     if token_auth:
         headers["Authorization"] = token_auth
 
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/ordenes"
+    logger.info("📡 [M4] Obteniendo órdenes de M4: %s con params %s", url, query_params)
+
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/ordenes", params=query_params, headers=headers)
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.get(url, params=query_params, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M4] Órdenes obtenidas exitosamente de M4")
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M4] Error HTTP al obtener órdenes de M4: %s - %s", exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M4 al obtener órdenes: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M4] Error de red al obtener órdenes de M4: %s", exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 4 (Laboratorio): {exc}") from exc

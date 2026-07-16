@@ -70,14 +70,14 @@ async def solicitar_internacion(
 
         if response.status_code in (200, 201):
             logger.info(
-                "✅ Solicitud de internación enviada a M6 — paciente: %s, evolución: %s",
+                "✅ [M6] Solicitud de internación enviada exitosamente a M6 — paciente: %s, evolución: %s",
                 solicitud.id_paciente,
                 solicitud.id_evolucion_origen,
             )
             return response.json()
         else:
             logger.error(
-                "❌ M6 respondió con error %s al solicitar internación: %s",
+                "❌ [M6] M6 respondió con error %s al solicitar internación: %s",
                 response.status_code,
                 response.text,
             )
@@ -88,7 +88,7 @@ async def solicitar_internacion(
     except ImportError:
         # httpx no instalado — se loguea y se simula respuesta en desarrollo
         logger.warning(
-            "⚠️ httpx no disponible. Simulando solicitud de internación a M6 para paciente %s.",
+            "⚠️ [M6] httpx no disponible. Simulando solicitud de internación a M6 para paciente %s.",
             solicitud.id_paciente,
         )
         return {"status": "simulated", "id_solicitud": None}
@@ -97,5 +97,5 @@ async def solicitar_internacion(
         raise
 
     except Exception as exc:
-        logger.error("❌ Error de conexión con M6: %s", exc)
+        logger.error("❌ [M6] Error de conexión con M6: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 6 (Camas): {exc}") from exc

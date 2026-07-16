@@ -85,14 +85,26 @@ async def obtener_reporte(report_id: str, token: str | None = None) -> dict:
     if token:
         headers["Authorization"] = token
 
+    url = f"{settings.M5_BASE_URL.rstrip('/')}/v1/webhook/reportById"
+    logger.info("📡 [M5] Obteniendo reporte %s de M5: %s", report_id, url)
+
     async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.get(
-            f"{settings.M5_BASE_URL.rstrip('/')}/v1/webhook/reportById",
-            params={"reportId": report_id},
-            headers=headers,
-        )
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.get(
+                url,
+                params={"reportId": report_id},
+                headers=headers,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M5] Reporte %s obtenido exitosamente de M5: %s", report_id, data)
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M5] Error HTTP al obtener reporte %s de M5: %s - %s", report_id, exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M5 al obtener reporte: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M5] Error de red al obtener reporte %s de M5: %s", report_id, exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 5 (Imágenes): {exc}") from exc
 
 
 async def obtener_imagenes(report_id: str, token: str | None = None) -> dict:
@@ -126,12 +138,24 @@ async def obtener_imagenes(report_id: str, token: str | None = None) -> dict:
     if token:
         headers["Authorization"] = token
 
+    url = f"{settings.M5_BASE_URL.rstrip('/')}/v1/webhook/images/reportId"
+    logger.info("📡 [M5] Obteniendo imágenes para reporte %s de M5: %s", report_id, url)
+
     async with httpx.AsyncClient(timeout=60.0) as client:
-        resp = await client.get(
-            f"{settings.M5_BASE_URL.rstrip('/')}/v1/webhook/images/reportId",
-            params={"reportId": report_id},
-            headers=headers,
-        )
-        resp.raise_for_status()
-        return resp.json()
+        try:
+            resp = await client.get(
+                url,
+                params={"reportId": report_id},
+                headers=headers,
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            logger.info("✅ [M5] Imágenes para reporte %s obtenidas exitosamente de M5", report_id)
+            return data
+        except httpx.HTTPStatusError as exc:
+            logger.error("❌ [M5] Error HTTP al obtener imágenes para reporte %s de M5: %s - %s", report_id, exc.response.status_code, exc.response.text)
+            raise RuntimeError(f"Error de M5 al obtener imágenes: {exc.response.text}") from exc
+        except Exception as exc:
+            logger.error("❌ [M5] Error de red al obtener imágenes para reporte %s de M5: %s", report_id, exc)
+            raise RuntimeError(f"No se pudo conectar con el Módulo 5 (Imágenes): {exc}") from exc
 

@@ -117,7 +117,7 @@ async def notificar_prestacion(
 
         if response.status_code in (200, 201):
             logger.info(
-                "✅ Prestación notificada a M7 — paciente: %s, acto: %s, código: %s",
+                "✅ [M7] Prestación notificada a M7 — paciente: %s, acto: %s, código: %s",
                 id_paciente,
                 id_acto_medico,
                 codigo_prestacion,
@@ -125,7 +125,7 @@ async def notificar_prestacion(
             return response.json()
         else:
             logger.error(
-                "❌ M7 respondió con error %s al registrar prestación: %s",
+                "❌ [M7] M7 respondió con error %s al registrar prestación: %s",
                 response.status_code,
                 response.text,
             )
@@ -135,7 +135,7 @@ async def notificar_prestacion(
 
     except ImportError:
         logger.warning(
-            "⚠️ httpx no disponible. Simulando notificación a M7 para acto %s.",
+            "⚠️ [M7] httpx no disponible. Simulando notificación a M7 para acto %s.",
             id_acto_medico,
         )
         return {"status": "simulated", "idPrestacion": None}
@@ -144,7 +144,7 @@ async def notificar_prestacion(
         raise
 
     except Exception as exc:
-        logger.error("❌ Error de conexión con M7 (Facturación): %s", exc)
+        logger.error("❌ [M7] Error de conexión con M7 (Facturación): %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
 
 
@@ -206,7 +206,7 @@ async def buscar_prestaciones_nomenclador(
             return response.json()
         else:
             logger.error(
-                "❌ M7 respondió con error %s al buscar prestaciones: %s",
+                "❌ [M7] M7 respondió con error %s al buscar prestaciones: %s",
                 response.status_code,
                 response.text,
             )
@@ -215,14 +215,14 @@ async def buscar_prestaciones_nomenclador(
             )
 
     except ImportError:
-        logger.warning("⚠️ httpx no disponible. Simulando búsqueda en nomenclador.")
+        logger.warning("⚠️ [M7] httpx no disponible. Simulando búsqueda en nomenclador.")
         return []
 
     except RuntimeError:
         raise
 
     except Exception as exc:
-        logger.error("❌ Error de conexión con M7 (Facturación) al buscar nomenclador: %s", exc)
+        logger.error("❌ [M7] Error de conexión con M7 (Facturación) al buscar nomenclador: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
 
 
@@ -263,7 +263,7 @@ async def buscar_entidades_financiadoras(
             return response.json()
         else:
             logger.error(
-                "❌ M7 respondió con error %s al buscar financiadores: %s",
+                "❌ [M7] M7 respondió con error %s al buscar financiadores: %s",
                 response.status_code,
                 response.text,
             )
@@ -272,14 +272,14 @@ async def buscar_entidades_financiadoras(
             )
 
     except ImportError:
-        logger.warning("⚠️ httpx no disponible. Simulando búsqueda de financiadores.")
+        logger.warning("⚠️ [M7] httpx no disponible. Simulando búsqueda de financiadores.")
         return []
 
     except RuntimeError:
         raise
 
     except Exception as exc:
-        logger.error("❌ Error de conexión con M7 (Facturación) al buscar financiadores: %s", exc)
+        logger.error("❌ [M7] Error de conexión con M7 (Facturación) al buscar financiadores: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
 
 
@@ -329,7 +329,7 @@ async def buscar_planes(
             return response.json()
         else:
             logger.error(
-                "❌ M7 respondió con error %s al buscar planes: %s",
+                "❌ [M7] M7 respondió con error %s al buscar planes: %s",
                 response.status_code,
                 response.text,
             )
@@ -338,12 +338,12 @@ async def buscar_planes(
             )
 
     except ImportError:
-        logger.warning("⚠️ httpx no disponible. Simulando búsqueda de planes.")
+        logger.warning("⚠️ [M7] httpx no disponible. Simulando búsqueda de planes.")
         return []
 
     except RuntimeError:
         raise
 
     except Exception as exc:
-        logger.error("❌ Error de conexión con M7 (Facturación) al buscar planes: %s", exc)
+        logger.error("❌ [M7] Error de conexión con M7 (Facturación) al buscar planes: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
