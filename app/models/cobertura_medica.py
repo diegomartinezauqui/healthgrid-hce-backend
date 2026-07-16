@@ -19,9 +19,10 @@ class CoberturaMedica(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     id_paciente: Mapped[int] = mapped_column(Integer, ForeignKey("pacientes.id_paciente"), index=True)
-    id_obra_social: Mapped[int] = mapped_column(Integer)
+    entidadFinanciadoraId: Mapped[int] = mapped_column("entidadFinanciadoraId", Integer)
     nombre_obra_social: Mapped[str] = mapped_column(String(200))
-    codigo_plan: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    nombre_plan: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    planId: Mapped[str | None] = mapped_column("planId", String(50), nullable=True)
     numero_afiliado: Mapped[str | None] = mapped_column(String(50), nullable=True)
     vigente_desde: Mapped[date | None] = mapped_column(Date, nullable=True)
     vigente_hasta: Mapped[date | None] = mapped_column(Date, nullable=True)

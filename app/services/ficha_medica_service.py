@@ -89,8 +89,11 @@ async def crear_ficha_medica_completa(
     if data.genero is not None:
         datos["genero"] = data.genero
         updated = True
-    if data.obra_social is not None:
-        datos["obra_social"] = data.obra_social
+    if data.nombre_plan is not None:
+        datos["obra_social"] = data.nombre_plan
+        updated = True
+    elif data.nombre_obra_social is not None:
+        datos["obra_social"] = data.nombre_obra_social
         updated = True
 
     if updated:
@@ -100,29 +103,31 @@ async def crear_ficha_medica_completa(
         db.add(paciente)
 
     # Sincronizar Cobertura Médica (obra social / prepaga) en caché local
-    if data.id_obra_social is not None or data.id_plan is not None:
+    if data.entidadFinanciadoraId is not None or data.planId is not None:
         from app.models.cobertura_medica import CoberturaMedica
         from sqlalchemy import select
         result_cob = await db.execute(
             select(CoberturaMedica).where(CoberturaMedica.id_paciente == id_paciente).limit(1)
         )
         cobertura = result_cob.scalar_one_or_none()
-        nombre_cob = data.obra_social or "Obra Social"
-        # codigo_plan almacena el ID del plan de M7 como string
-        codigo_plan = str(data.id_plan) if data.id_plan is not None else None
+        nombre_cob = data.nombre_obra_social or "Obra Social"
+        nombre_plan = data.nombre_plan or "Plan"
+        plan_id_str = str(data.planId) if data.planId is not None else None
 
         if not cobertura:
             cobertura = CoberturaMedica(
                 id_paciente=id_paciente,
-                id_obra_social=data.id_obra_social,
+                entidadFinanciadoraId=data.entidadFinanciadoraId,
                 nombre_obra_social=nombre_cob,
-                codigo_plan=codigo_plan,
+                nombre_plan=nombre_plan,
+                planId=plan_id_str,
                 numero_afiliado=data.numero_afiliado,
             )
         else:
-            cobertura.id_obra_social = data.id_obra_social
+            cobertura.entidadFinanciadoraId = data.entidadFinanciadoraId
             cobertura.nombre_obra_social = nombre_cob
-            cobertura.codigo_plan = codigo_plan
+            cobertura.nombre_plan = nombre_plan
+            cobertura.planId = plan_id_str
             cobertura.numero_afiliado = data.numero_afiliado
 
         db.add(cobertura)

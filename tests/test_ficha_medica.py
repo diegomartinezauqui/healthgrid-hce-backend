@@ -125,9 +125,10 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
         "dni": "99988877",
         "fecha_nacimiento": "1990-05-15",
         "genero": "M",
-        "obra_social": "OSDE 310",
-        "id_obra_social": 1,
-        "id_plan": 2,
+        "nombre_obra_social": "OSDE",
+        "nombre_plan": "OSDE 310",
+        "entidadFinanciadoraId": 1,
+        "planId": 2,
         "numero_afiliado": "1234567890"
     }
 
@@ -149,8 +150,10 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
     q_cob = await db.execute(select(CoberturaMedica).where(CoberturaMedica.id_paciente == id_paciente))
     cob = q_cob.scalar_one_or_none()
     assert cob is not None
-    assert cob.id_obra_social == 1  # Entidad Financiadora
-    assert cob.codigo_plan == "2"   # ID del Plan de M7
+    assert cob.entidadFinanciadoraId == 1  # Entidad Financiadora
+    assert cob.planId == "2"   # ID del Plan de M7
+    assert cob.nombre_obra_social == "OSDE"
+    assert cob.nombre_plan == "OSDE 310"
     assert cob.numero_afiliado == "1234567890"
 
     # Segunda llamada (actualización/upsert)
@@ -169,9 +172,10 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
             }
         ],
         "alertas_clinicas": [],
-        "obra_social": "Swiss Medical SMG02",
-        "id_obra_social": 2,
-        "id_plan": 3,
+        "nombre_obra_social": "Swiss Medical",
+        "nombre_plan": "Swiss Medical SMG02",
+        "entidadFinanciadoraId": 2,
+        "planId": 3,
         "numero_afiliado": "0987654321"
     }
 
@@ -196,8 +200,10 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
 
     # Verificar actualización de cobertura médica en cache local
     await db.refresh(cob)
-    assert cob.id_obra_social == 2     # Entidad Financiadora actualizada
-    assert cob.codigo_plan == "3"       # ID del Plan actualizado
+    assert cob.entidadFinanciadoraId == 2     # Entidad Financiadora actualizada
+    assert cob.planId == "3"       # ID del Plan actualizado
+    assert cob.nombre_obra_social == "Swiss Medical"
+    assert cob.nombre_plan == "Swiss Medical SMG02"
     assert cob.numero_afiliado == "0987654321"
 
 

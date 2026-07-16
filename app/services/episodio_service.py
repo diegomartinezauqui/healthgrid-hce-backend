@@ -324,9 +324,9 @@ async def _notificar_m7(
         return
 
     try:
-        # Obtener el ID de plan real (guardado en codigo_plan) para enviarlo a M7.
-        # En caso de no existir, se hace fallback a id_obra_social para mantener compatibilidad.
-        plan_id = int(cobertura.codigo_plan) if (cobertura.codigo_plan and cobertura.codigo_plan.isdigit()) else cobertura.id_obra_social
+        # Obtener el ID de plan real (guardado en planId) para enviarlo a M7.
+        # En caso de no existir, se hace fallback a entidadFinanciadoraId para mantener compatibilidad.
+        plan_id = int(cobertura.planId) if (cobertura.planId and cobertura.planId.isdigit()) else cobertura.entidadFinanciadoraId
 
         await m7_client.notificar_prestacion(
             id_paciente=id_paciente,
