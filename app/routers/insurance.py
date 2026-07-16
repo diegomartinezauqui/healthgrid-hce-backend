@@ -48,4 +48,14 @@ async def obtener_cobertura(
             detail={"error": "NOT_FOUND", "message": "El recurso solicitado no fue encontrado."},
         )
 
-    return InsuranceResponse.model_validate(cobertura)
+    response_data = InsuranceResponse(
+        id_paciente=cobertura.id_paciente,
+        entidadFinanciadoraId=cobertura.entidadFinanciadoraId,
+        nombre_obra_social=cobertura.nombre_obra_social,
+        nombre_plan=cobertura.nombre_plan,
+        planId=cobertura.planId,
+        numero_afiliado=cobertura.numero_afiliado
+    )
+    return response_data
+
+

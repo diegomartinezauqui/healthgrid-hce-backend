@@ -27,4 +27,3 @@ def downgrade() -> None:
     op.drop_column('coberturas_medicas', 'nombre_plan')
     op.alter_column('coberturas_medicas', 'planId', new_column_name='codigo_plan')
     op.alter_column('coberturas_medicas', 'entidadFinanciadoraId', new_column_name='id_obra_social')
-

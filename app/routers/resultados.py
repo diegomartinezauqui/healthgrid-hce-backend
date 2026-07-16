@@ -3,7 +3,7 @@ Endpoint de resultados de estudios — Integración M4/M5 → HCE.
 M4/M5 envían resultados para vincularlos a la Historia Clínica.
 """
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, Request
 
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
@@ -14,6 +14,7 @@ from app.schemas.resultado import (
     ResultadoLaboratorioWebhook,
 )
 from app.services import resultado_service
+from app.integrations import m5_client
 
 router = APIRouter()
 
@@ -71,3 +72,56 @@ async def registrar_resultado_laboratorio(
         status="success",
         message="Resultado de laboratorio vinculado correctamente a la Historia Clínica.",
     )
+
+
+@router.get(
+    "/resultados/imagenes/{report_id}/detalle",
+    summary="Consultar detalle de un reporte específico en M5",
+    description="Actúa como proxy hacia M5 para obtener el detalle de un informe clínico mediante su UUID.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def obtener_detalle_reporte_m5(
+    report_id: str,
+    request: Request,
+    _user=Depends(require_permission("hce:resultados:read")),
+):
+    token = request.headers.get("Authorization")
+    try:
+        return await m5_client.obtener_reporte(report_id, token)
+    except Exception as exc:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "INTERNAL_SERVER_ERROR", "message": str(exc)},
+        )
+
+
+@router.get(
+    "/resultados/imagenes/{report_id}/imagenes",
+    summary="Consultar imágenes de un reporte específico en M5",
+    description="Actúa como proxy hacia M5 para obtener el listado de archivos/imágenes médicas asociadas a un informe clínico.",
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        404: {"model": ErrorResponse},
+    },
+)
+async def obtener_imagenes_reporte_m5(
+    report_id: str,
+    request: Request,
+    _user=Depends(require_permission("hce:resultados:read")),
+):
+    token = request.headers.get("Authorization")
+    try:
+        return await m5_client.obtener_imagenes(report_id, token)
+    except Exception as exc:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail={"error": "INTERNAL_SERVER_ERROR", "message": str(exc)},
+        )
+

@@ -64,10 +64,13 @@ class FichaMedicaCompletaCreate(BaseModel):
     dni: Optional[str] = Field(None, description="DNI del paciente")
     fecha_nacimiento: Optional[str] = Field(None, description="Fecha de nacimiento (YYYY-MM-DD)")
     genero: Optional[str] = Field(None, description="Género/Sexo del paciente")
-    obra_social: Optional[str] = Field(None, description="Nombre descriptivo de la cobertura (ej: 'OSDE 310')")
-    id_obra_social: Optional[int] = Field(None, description="ID de la Entidad Financiadora en M7 (obra social / prepaga)")
-    id_plan: Optional[int] = Field(None, description="ID del Plan en M7 (ej: Plan 210, Plan 310)")
+    nombre_obra_social: Optional[str] = Field(None, description="Nombre de la Obra Social (ej: 'OSDE')")
+    nombre_plan: Optional[str] = Field(None, description="Nombre del Plan (ej: 'OSDE 310')")
+    entidadFinanciadoraId: Optional[int] = Field(None, description="ID de la Entidad Financiadora en M7")
+    planId: Optional[int] = Field(None, description="ID del Plan en M7")
     numero_afiliado: Optional[str] = Field(None, description="Número de afiliado del paciente")
+    telefono: Optional[str] = Field(None, description="Teléfono del paciente")
+    direccion: Optional[str] = Field(None, description="Dirección del paciente")
 
 
 class FichaMedicaCompletaResponse(BaseModel):
