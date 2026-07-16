@@ -362,3 +362,42 @@ async def test_obtener_resultado_orden(
     assert response_forbidden.status_code == 403
 
 
+@pytest.mark.asyncio
+async def test_obtener_detalle_reporte_m5_proxy(
+    client: AsyncClient,
+    auth_headers: dict,
+):
+    report_uuid = "338d03cb-e245-45b4-b2e0-e2a947e1d6c4"
+    response = await client.get(
+        f"/api/v1/resultados/imagenes/{report_uuid}/detalle",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["reportId"] == report_uuid
+    assert data["title"] == "Ecografía Renal Bilateral"
+    assert "techniqueDetail" in data or "techniqueDetails" in data
+    assert data["observations"] == "Campos pulmonares libres, sin hallazgos patológicos."
+    assert data["conclusion"] == "Estudio de tórax sin particularidades."
+
+
+@pytest.mark.asyncio
+async def test_obtener_imagenes_reporte_m5_proxy(
+    client: AsyncClient,
+    auth_headers: dict,
+):
+    report_uuid = "7cc5a7f0-9510-4a71-a927-aaf14f1337de"
+    response = await client.get(
+        f"/api/v1/resultados/imagenes/{report_uuid}/imagenes",
+        headers=auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["reportId"] == report_uuid
+    assert "images" in data
+    assert isinstance(data["images"], list)
+    assert len(data["images"]) > 0
+    assert "path" in data["images"][0] or "image" in data["images"][0]
+
+
+
