@@ -53,6 +53,24 @@ async def solicitar_internacion(
             "mock": True,
         }
 
+    # ── Modo asíncrono vía Core Bus (RabbitMQ) ──
+    if settings.ENABLE_CORE_BUS and settings.CORE_EVENT_INTERNACION_SOLICITUD_CREADA_ID > 0:
+        from app.integrations.core_bus import publish_named
+        logger.info("📡 [M6] Publicando solicitud de internación al bus de eventos (asíncrono)")
+        try:
+            res = await publish_named("internacion.solicitud.creada", solicitud.model_dump(mode="json"))
+            logger.info("✅ [M6] Solicitud de internación publicada exitosamente en el bus: %s", res)
+            return {
+                "status": "published",
+                "id_solicitud": f"BUS-SOL-{solicitud.id_paciente}",
+                "mensaje": "Solicitud de internación publicada en el bus de eventos del Core de forma asíncrona.",
+                "bus": True,
+            }
+        except Exception as exc:
+            logger.error("❌ [M6] Error al publicar solicitud de internación en el bus: %s", exc)
+            raise RuntimeError(f"No se pudo publicar la solicitud de internación en el bus de eventos: {exc}") from exc
+
+    # ── Modo sincrónico vía HTTP REST ──
     try:
         import httpx
 

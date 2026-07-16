@@ -83,6 +83,9 @@ class Settings(BaseSettings):
     CORE_EVENT_RECETA_CREADA_ID: int = 0
     CORE_EVENT_EPISODIO_CERRADO_ID: int = 0
     CORE_EVENT_PATOLOGIA_CRITICA_ID: int = 0
+    # Eventos de integración con M6 (Camas)
+    CORE_EVENT_INTERNACION_SOLICITUD_CREADA_ID: int = 0
+    CORE_EVENT_INTERNACION_ALTA_REGISTRADA_ID: int = 0
     # Evento publicado por M6 cuando aprueba o rechaza una solicitud de cama.
     CORE_EVENT_SOLICITUD_RESUELTA_ID: int = 22
     # ─── Modo de integración con otros módulos ───────────────────

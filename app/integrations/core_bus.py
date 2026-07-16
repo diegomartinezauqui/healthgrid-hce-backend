@@ -91,6 +91,9 @@ def _event_id_por_nombre(nombre: str) -> int:
         "receta.creada": settings.CORE_EVENT_RECETA_CREADA_ID,
         "episodio.cerrado": settings.CORE_EVENT_EPISODIO_CERRADO_ID,
         "notificacion.obligatoria": settings.CORE_EVENT_PATOLOGIA_CRITICA_ID,
+        # Eventos de M6 (Camas)
+        "internacion.solicitud.creada": settings.CORE_EVENT_INTERNACION_SOLICITUD_CREADA_ID,
+        "internacion.alta-medica.registrada": settings.CORE_EVENT_INTERNACION_ALTA_REGISTRADA_ID,
         # Evento de M6 — resolucion de solicitud de cama (aprobada o rechazada)
         "solicitud.resuelta": settings.CORE_EVENT_SOLICITUD_RESUELTA_ID,
     }.get(nombre, 0)
