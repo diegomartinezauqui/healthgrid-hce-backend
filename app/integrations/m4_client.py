@@ -25,23 +25,11 @@ async def notificar_orden_hce(
     paciente_edad: int,
     paciente_sexo: str,
     alertas_clinicas: Optional[List[dict]] = None,
+    token_auth: Optional[str] = None,
 ) -> dict:
     """
     Envía una orden de laboratorio a M4 usando el nuevo endpoint
     POST /v1/ordenes/hce (idempotente: M4 ignora duplicados por idOrdenHce).
-
-    Estructura enviada:
-      {
-        "idOrden":           <id_orden HCE>,
-        "idPaciente":        <id_paciente>,
-        "descripcionPedido": <texto libre>,
-        "prioridad":         <"Normal" | "Urgente" | "Emergencia">,
-        "alertasClinicas":   [{"tipo": ..., "descripcion": ...}],
-        "pacienteNombre":    ...,
-        "pacienteDni":       ...,
-        "pacienteEdad":      ...,
-        "pacienteSexo":      ...
-      }
     """
     payload = {
         "idOrden": id_orden,
@@ -65,9 +53,12 @@ async def notificar_orden_hce(
         }
 
     import httpx
+    headers = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes/hce", json=payload)
+        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes/hce", json=payload, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
@@ -83,6 +74,7 @@ async def notificar_orden_laboratorio(
     estudio_ids: List[int],
     prioridad: str,
     origen: str = "HCE",
+    token_auth: Optional[str] = None,
 ) -> dict:
     """
     [LEGADO] Notifica a M4 vía POST /v1/ordenes (endpoint anterior).
@@ -117,14 +109,20 @@ async def notificar_orden_laboratorio(
         }
 
     import httpx
+    headers = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes", json=payload)
+        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes", json=payload, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
 
-async def obtener_analitos(categoria: Optional[str] = None) -> List[dict]:
+async def obtener_analitos(
+    categoria: Optional[str] = None,
+    token_auth: Optional[str] = None,
+) -> List[dict]:
     """
     Obtiene el catálogo de analitos disponibles en M4 (GET /v1/analitos).
     Filtra opcionalmente por categoría: "Hematologia", "Bioquimica", "Orina", etc.
@@ -182,14 +180,17 @@ async def obtener_analitos(categoria: Optional[str] = None) -> List[dict]:
         return mock_data
 
     import httpx
+    headers = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/analitos", params=params)
+        resp = await client.get(f"{settings.M4_BASE_URL}/v1/analitos", params=params, headers=headers)
         resp.raise_for_status()
         return resp.json()
 
 
-async def obtener_estudios() -> List[dict]:
+async def obtener_estudios(token_auth: Optional[str] = None) -> List[dict]:
     """
     [LEGADO] Obtiene el catálogo de estudios en M4 (GET /v1/estudios).
     Usar obtener_analitos() para el nuevo contrato.
@@ -215,14 +216,17 @@ async def obtener_estudios() -> List[dict]:
         ]
 
     import httpx
+    headers = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/estudios")
+        resp = await client.get(f"{settings.M4_BASE_URL}/v1/estudios", headers=headers)
         resp.raise_for_status()
         return resp.json()
 
 
-async def obtener_ordenes(query_params: dict) -> dict:
+async def obtener_ordenes(query_params: dict, token_auth: Optional[str] = None) -> dict:
     """
     Obtiene las órdenes registradas en M4 (GET /v1/ordenes).
     Soporta envío de parámetros de consulta para filtrado.
@@ -246,8 +250,11 @@ async def obtener_ordenes(query_params: dict) -> dict:
         }
 
     import httpx
+    headers = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
 
     async with httpx.AsyncClient(timeout=10.0) as client:
-        resp = await client.get(f"{settings.M4_BASE_URL}/v1/ordenes", params=query_params)
+        resp = await client.get(f"{settings.M4_BASE_URL}/v1/ordenes", params=query_params, headers=headers)
         resp.raise_for_status()
         return resp.json()

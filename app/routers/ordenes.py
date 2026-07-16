@@ -48,10 +48,12 @@ async def listar_analitos(
         description="Categoría para filtrar analitos (ej: Hematologia, Bioquimica, Orina).",
         examples=["Hematologia"],
     ),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     from app.integrations import m4_client
+    token_auth = f"Bearer {credentials.credentials}" if credentials else None
     try:
-        analitos = await m4_client.obtener_analitos(categoria=categoria)
+        analitos = await m4_client.obtener_analitos(categoria=categoria, token_auth=token_auth)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
@@ -316,8 +318,10 @@ async def crear_orden_laboratorio(
     body: OrdenLaboratorioCreate,
     db: DbSession,
     _user=Depends(require_permission("hce:ordenes:write")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ):
     try:
+        token_auth = f"Bearer {credentials.credentials}" if credentials else None
         orden = await orden_service.crear_orden(
             db,
             id_paciente=id_paciente,
@@ -329,6 +333,7 @@ async def crear_orden_laboratorio(
             id_medico_solicitante=_user.sub if hasattr(_user, "sub") else getattr(_user, "get", lambda k: None)("sub"),
             estudio_ids=body.estudio_ids,
             origen=body.origen,
+            token_auth=token_auth,
         )
         return OrdenCreatedResponse(
             status="success",
