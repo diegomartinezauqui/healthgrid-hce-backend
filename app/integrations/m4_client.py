@@ -1,6 +1,10 @@
 """
 Cliente HTTP para el Módulo 4 (Laboratorio).
-HCE llama a M4 para registrar órdenes clínicas y consultar estudios disponibles.
+HCE llama a M4 para registrar órdenes clínicas y consultar analitos/estudios disponibles.
+
+Endpoints activos del contrato con M4:
+  GET  /v1/analitos          → catálogo de analitos (con filtro opcional ?categoria=)
+  POST /v1/ordenes/hce       → ingesta de orden desde HCE (idempotente por idOrdenHce)
 """
 
 import logging
@@ -9,6 +13,63 @@ from typing import List, Optional
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
+
+async def notificar_orden_hce(
+    id_orden: int,
+    id_paciente: int,
+    descripcion_pedido: Optional[str],
+    prioridad: str,
+    paciente_nombre: str,
+    paciente_dni: str,
+    paciente_edad: int,
+    paciente_sexo: str,
+    alertas_clinicas: Optional[List[dict]] = None,
+) -> dict:
+    """
+    Envía una orden de laboratorio a M4 usando el nuevo endpoint
+    POST /v1/ordenes/hce (idempotente: M4 ignora duplicados por idOrdenHce).
+
+    Estructura enviada:
+      {
+        "idOrden":           <id_orden HCE>,
+        "idPaciente":        <id_paciente>,
+        "descripcionPedido": <texto libre>,
+        "prioridad":         <"Normal" | "Urgente" | "Emergencia">,
+        "alertasClinicas":   [{"tipo": ..., "descripcion": ...}],
+        "pacienteNombre":    ...,
+        "pacienteDni":       ...,
+        "pacienteEdad":      ...,
+        "pacienteSexo":      ...
+      }
+    """
+    payload = {
+        "idOrden": id_orden,
+        "idPaciente": id_paciente,
+        "descripcionPedido": descripcion_pedido or "",
+        "prioridad": prioridad,
+        "alertasClinicas": alertas_clinicas or [],
+        "pacienteNombre": paciente_nombre,
+        "pacienteDni": paciente_dni,
+        "pacienteEdad": paciente_edad,
+        "pacienteSexo": paciente_sexo,
+    }
+
+    if settings.integraciones_mockeadas:
+        logger.info("🧪 [MOCK M4] POST /v1/ordenes/hce -> %s", payload)
+        return {
+            "status": "success",
+            "message": "Orden HCE notificada a M4 (mock).",
+            "idOrden": id_orden,
+            "mock": True,
+        }
+
+    import httpx
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.post(f"{settings.M4_BASE_URL}/v1/ordenes/hce", json=payload)
+        resp.raise_for_status()
+        return resp.json()
 
 
 async def notificar_orden_laboratorio(
@@ -24,7 +85,8 @@ async def notificar_orden_laboratorio(
     origen: str = "HCE",
 ) -> dict:
     """
-    Notifica la creación de una orden médica de laboratorio a M4 (POST /v1/ordenes).
+    [LEGADO] Notifica a M4 vía POST /v1/ordenes (endpoint anterior).
+    Usar notificar_orden_hce() para el nuevo contrato.
     """
     prio_val = 0
     if str(prioridad).lower() == "urgente":
@@ -45,7 +107,7 @@ async def notificar_orden_laboratorio(
     }
 
     if settings.integraciones_mockeadas:
-        logger.info("🧪 [MOCK M4] POST /v1/ordenes -> %s", payload)
+        logger.info("🧪 [MOCK M4] POST /v1/ordenes (legado) -> %s", payload)
         return {
             "status": "success",
             "message": "Orden de laboratorio notificada (mock).",
@@ -62,12 +124,78 @@ async def notificar_orden_laboratorio(
         return resp.json()
 
 
+async def obtener_analitos(categoria: Optional[str] = None) -> List[dict]:
+    """
+    Obtiene el catálogo de analitos disponibles en M4 (GET /v1/analitos).
+    Filtra opcionalmente por categoría: "Hematologia", "Bioquimica", "Orina", etc.
+    """
+    params = {}
+    if categoria:
+        params["categoria"] = categoria
+
+    if settings.integraciones_mockeadas:
+        logger.info("🧪 [MOCK M4] GET /v1/analitos params=%s", params)
+        mock_data = [
+            {
+                "id": 1,
+                "codigo": "HB",
+                "nombre": "Hemoglobina",
+                "unidadMedida": "g/dL",
+                "categoria": "Hematologia",
+                "metodo": "Espectrofotometría",
+            },
+            {
+                "id": 2,
+                "codigo": "GLU",
+                "nombre": "Glucosa",
+                "unidadMedida": "mg/dL",
+                "categoria": "Bioquimica",
+                "metodo": "Enzimático colorimétrico",
+            },
+            {
+                "id": 3,
+                "codigo": "CREAT",
+                "nombre": "Creatinina",
+                "unidadMedida": "mg/dL",
+                "categoria": "Bioquimica",
+                "metodo": "Jaffé",
+            },
+            {
+                "id": 4,
+                "codigo": "SED",
+                "nombre": "Sedimento urinario",
+                "unidadMedida": "/campo",
+                "categoria": "Orina",
+                "metodo": "Microscopia",
+            },
+            {
+                "id": 5,
+                "codigo": "HTO",
+                "nombre": "Hematocrito",
+                "unidadMedida": "%",
+                "categoria": "Hematologia",
+                "metodo": "Centrífuga",
+            },
+        ]
+        if categoria:
+            mock_data = [a for a in mock_data if a["categoria"].lower() == categoria.lower()]
+        return mock_data
+
+    import httpx
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        resp = await client.get(f"{settings.M4_BASE_URL}/v1/analitos", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+
 async def obtener_estudios() -> List[dict]:
     """
-    Obtiene el catálogo de estudios disponibles en el Módulo 4 (GET /v1/estudios).
+    [LEGADO] Obtiene el catálogo de estudios en M4 (GET /v1/estudios).
+    Usar obtener_analitos() para el nuevo contrato.
     """
     if settings.integraciones_mockeadas:
-        logger.info("🧪 [MOCK M4] GET /v1/estudios")
+        logger.info("🧪 [MOCK M4] GET /v1/estudios (legado)")
         return [
             {
                 "id": 1,
@@ -81,18 +209,6 @@ async def obtener_estudios() -> List[dict]:
                         "unidadMedida": "g/dL",
                         "categoria": "Sanguíneo",
                         "metodo": "Espectrofotometría",
-                        "rangosReferencia": [
-                            {
-                                "id": 1,
-                                "valorMinimo": 12.0,
-                                "valorMaximo": 16.0,
-                                "sexo": "Femenino",
-                                "edadMinima": 18,
-                                "edadMaxima": 120,
-                                "limiteCriticoInferior": 7.0,
-                                "limiteCriticoSuperior": 20.0,
-                            }
-                        ],
                     }
                 ],
             }

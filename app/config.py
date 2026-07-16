@@ -83,6 +83,8 @@ class Settings(BaseSettings):
     CORE_EVENT_RECETA_CREADA_ID: int = 0
     CORE_EVENT_EPISODIO_CERRADO_ID: int = 0
     CORE_EVENT_PATOLOGIA_CRITICA_ID: int = 0
+    # Evento publicado por M6 cuando aprueba o rechaza una solicitud de cama.
+    CORE_EVENT_SOLICITUD_RESUELTA_ID: int = 22
     # ─── Modo de integración con otros módulos ───────────────────
     # "mock" → los clients de salida loguean y devuelven respuestas canónicas
     #          (no hacen HTTP real). Webhooks de entrada siguen funcionando.

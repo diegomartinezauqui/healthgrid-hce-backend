@@ -3,9 +3,9 @@ Endpoints de órdenes médicas — Integración M4/M5 (Estudios).
 HCE expone → Laboratorio e Imágenes consumen.
 """
 
-from typing import Optional
+from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.auth.permissions import require_permission
 from app.auth.jwt_handler import security, HTTPAuthorizationCredentials
@@ -25,6 +25,40 @@ from app.services import orden_service, resultado_service
 from app.schemas.resultado import ResultadoEstudioResumen
 
 router = APIRouter()
+
+
+@router.get(
+    "/analitos/laboratorio",
+    summary="Listar analitos disponibles en M4 (catálogo de laboratorio)",
+    description=(
+        "Consulta el catálogo de analitos del Módulo 4 (Laboratorio). "
+        "El médico selecciona los analitos deseados de esta lista para luego crear la orden. "
+        "Filtro opcional por categoría: `Hematologia`, `Bioquimica`, `Orina`."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        502: {"model": ErrorResponse, "description": "M4 no disponible."},
+    },
+)
+async def listar_analitos(
+    _user=Depends(require_permission("hce:ordenes:read")),
+    categoria: Optional[str] = Query(
+        None,
+        description="Categoría para filtrar analitos (ej: Hematologia, Bioquimica, Orina).",
+        examples=["Hematologia"],
+    ),
+):
+    from app.integrations import m4_client
+    try:
+        analitos = await m4_client.obtener_analitos(categoria=categoria)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": "M4_UNAVAILABLE", "message": f"No se pudo obtener el catálogo de M4: {exc}"},
+        )
+    return {"status": "success", "cantidad": len(analitos), "data": analitos}
+
 
 
 @router.get(
