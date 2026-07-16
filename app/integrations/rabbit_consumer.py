@@ -136,4 +136,50 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
             await db.commit()
         return
 
+    # ── M6 Camas: solicitud de cama resuelta (aprobada o rechazada) ──
+    # El Core entrega el evento con event_type_name == "SOLICITUD_RESUELTA".
+    # Payload esperado de M6:
+    #   {
+    #     "solicitud_hce_id": <int>,        # id_solicitud en HCE
+    #     "decision":         "APROBADA" | "RECHAZADA",
+    #     "cama":             "Cama 4"   (solo si APROBADA),
+    #     "habitacion":       "Hab 201"  (solo si APROBADA),
+    #     "motivo_rechazo":   "..."      (solo si RECHAZADA)
+    #   }
+    if "solicitud" in name and ("resuelta" in name or "resulta" in name or "resolucion" in name):
+        from app.database import async_session
+        from app.schemas.solicitud_cama import SolicitudCamaResolver
+        from app.services import solicitud_cama_service
+
+        id_solicitud = payload.get("solicitud_hce_id")
+        if not id_solicitud:
+            logger.error(
+                "❌ SOLICITUD_RESUELTA recibida sin 'solicitud_hce_id'. Payload: %s", payload
+            )
+            return
+
+        # M6 puede enviar la decisión en mayúsculas (APROBADA/RECHAZADA)
+        decision_raw = (payload.get("decision") or "").lower()
+        decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+
+        resolver_body = SolicitudCamaResolver(
+            decision=decision,
+            cama=payload.get("cama"),
+            habitacion=payload.get("habitacion"),
+            motivo_rechazo=payload.get("motivo_rechazo"),
+        )
+        async with async_session() as db:
+            try:
+                await solicitud_cama_service.resolver_solicitud(db, int(id_solicitud), resolver_body)
+                await db.commit()
+                logger.info(
+                    "✅ Solicitud %s marcada como '%s' por evento SOLICITUD_RESUELTA de M6.",
+                    id_solicitud, decision,
+                )
+            except LookupError as exc:
+                logger.error("❌ SOLICITUD_RESUELTA: solicitud %s no encontrada: %s", id_solicitud, exc)
+            except ValueError as exc:
+                logger.warning("⚠️ SOLICITUD_RESUELTA: no se pudo resolver solicitud %s: %s", id_solicitud, exc)
+        return
+
     logger.warning("🤷 Sin handler para el evento '%s'. Payload: %s", event_name, payload)

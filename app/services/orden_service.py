@@ -147,17 +147,23 @@ async def crear_orden(
     from app.integrations import m4_client, m5_client
     
     if tipo_estudio == TipoEstudio.LABORATORIO:
+        # Obtener alertas clínicas del paciente para el Smart Payload de M4
+        alertas = await alerta_repo.get_activas_by_paciente(db, id_paciente)
+        alertas_payload = [
+            {"tipo": a.tipo, "descripcion": a.descripcion}
+            for a in alertas
+        ]
         asyncio.create_task(
-            m4_client.notificar_orden_laboratorio(
+            m4_client.notificar_orden_hce(
                 id_orden=orden.id_orden,
                 id_paciente=id_paciente,
+                descripcion_pedido=descripcion_pedido,
+                prioridad=prioridad.value if hasattr(prioridad, "value") else str(prioridad),
                 paciente_nombre=paciente_nombre,
                 paciente_dni=paciente_dni,
-                paciente_edad=paciente_edad,
+                paciente_edad=int(paciente_edad) if paciente_edad else 0,
                 paciente_sexo=paciente_sexo,
-                medico_id=id_medico_solicitante or 1,
-                estudio_ids=estudio_ids or [],
-                prioridad=prioridad.value if hasattr(prioridad, "value") else str(prioridad),
+                alertas_clinicas=alertas_payload,
             )
         )
     elif tipo_estudio == TipoEstudio.IMAGEN:
