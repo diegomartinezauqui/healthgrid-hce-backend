@@ -129,7 +129,9 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
         "nombre_plan": "OSDE 310",
         "entidadFinanciadoraId": 1,
         "planId": 2,
-        "numero_afiliado": "1234567890"
+        "numero_afiliado": "1234567890",
+        "telefono": "1122334455",
+        "direccion": "Av. Siempreviva 742"
     }
 
     # Primera creación y sincronización demográfica
@@ -144,6 +146,8 @@ async def test_crear_ficha_medica_completa_upsert(client: AsyncClient, db: Async
     await db.refresh(paciente)
     assert paciente.datos_personales["dni"] == "99988877"
     assert paciente.datos_personales["obra_social"] == "OSDE 310"
+    assert paciente.datos_personales["telefono"] == "1122334455"
+    assert paciente.datos_personales["direccion"] == "Av. Siempreviva 742"
 
     # Verificar creación de cobertura médica
     from app.models.cobertura_medica import CoberturaMedica

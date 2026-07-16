@@ -95,6 +95,12 @@ async def crear_ficha_medica_completa(
     elif data.nombre_obra_social is not None:
         datos["obra_social"] = data.nombre_obra_social
         updated = True
+    if data.telefono is not None:
+        datos["telefono"] = data.telefono
+        updated = True
+    if data.direccion is not None:
+        datos["direccion"] = data.direccion
+        updated = True
 
     if updated:
         from sqlalchemy.orm.attributes import flag_modified

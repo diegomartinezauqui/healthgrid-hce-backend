@@ -69,6 +69,8 @@ class FichaMedicaCompletaCreate(BaseModel):
     entidadFinanciadoraId: Optional[int] = Field(None, description="ID de la Entidad Financiadora en M7")
     planId: Optional[int] = Field(None, description="ID del Plan en M7")
     numero_afiliado: Optional[str] = Field(None, description="Número de afiliado del paciente")
+    telefono: Optional[str] = Field(None, description="Teléfono del paciente")
+    direccion: Optional[str] = Field(None, description="Dirección del paciente")
 
 
 class FichaMedicaCompletaResponse(BaseModel):
