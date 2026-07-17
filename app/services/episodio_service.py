@@ -142,8 +142,19 @@ async def actualizar_episodio(
                 "total_actos_medicos": len(episodio.actos_medicos),
                 "fecha_cierre": episodio.fecha_cierre.isoformat(),
             })
+
+            # Si es un episodio de internación, notificar el alta médica a M6 (Evento 15)
+            if episodio.tipo == TipoEpisodio.INTERNACION:
+                payload_alta = {
+                    "paciente_id": id_paciente,
+                    "medico_firmante_id": episodio.id_medico_responsable or 1,
+                    "tipo_alta": "ALTA_MEDICA",
+                    "timestamp": episodio.fecha_cierre.isoformat().replace("+00:00", "Z"),
+                }
+                await publish_named("internacion.alta-medica.registrada", payload_alta)
+                logger.warning("✅ [M6] Alta médica notificada al bus de eventos: %s", payload_alta)
         except Exception as exc:
-            logger.warning("⚠️ No se pudo publicar episodio.cerrado al bus del Core: %s", exc)
+            logger.warning("⚠️ No se pudo publicar evento de cierre/alta al bus del Core: %s", exc)
 
         # Notificar a M7(Facturacion) y M6(Internacion) vía Kafka (mantener por compatibilidad)
         try:
