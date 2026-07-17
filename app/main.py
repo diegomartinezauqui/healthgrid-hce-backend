@@ -59,7 +59,9 @@ async def lifespan(app: FastAPI):
     # Bus de eventos del Core (modelo real: RabbitMQ + POST /events/log).
     if settings.ENABLE_CORE_BUS:
         from app.integrations.rabbit_consumer import start_core_bus_consumer
+        from app.services.core_subscription import registrar_suscripciones_core
         asyncio.create_task(start_core_bus_consumer())
+        asyncio.create_task(registrar_suscripciones_core())
 
     yield
     # ── Shutdown ──
