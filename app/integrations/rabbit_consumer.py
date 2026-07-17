@@ -33,11 +33,19 @@ async def start_core_bus_consumer() -> None:
         logger.error("❌ aio-pika no está instalado; no se puede consumir RabbitMQ.")
         return
 
+    import urllib.parse
+    safe_user = urllib.parse.quote_plus(settings.RABBITMQ_USER)
+    uri_completa = f"amqp://{safe_user}:{settings.RABBITMQ_PASSWORD}@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}{settings.RABBITMQ_VHOST}"
+    uri_enmascarada = f"amqp://{safe_user}:******@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}{settings.RABBITMQ_VHOST}"
+    
+    logger.warning("🔌 Conectando a RabbitMQ usando URI (Enmascarada): %s", uri_enmascarada)
+    logger.warning("🔌 URI Completa de conexión (para validación): %s", uri_completa)
+
     try:
         connection = await aio_pika.connect_robust(
             host=settings.RABBITMQ_HOST,
             port=settings.RABBITMQ_PORT,
-            login=settings.RABBITMQ_USER,       # aio-pika escapa el usuario (email) por nosotros
+            login=settings.RABBITMQ_USER,
             password=settings.RABBITMQ_PASSWORD,
             virtualhost=settings.RABBITMQ_VHOST,
         )
@@ -59,11 +67,11 @@ async def start_core_bus_consumer() -> None:
             # passive=True: la cola ya fue creada vía el Core; solo la referenciamos.
             queue = await channel.declare_queue(nombre, passive=True)
             await queue.consume(_on_message)
-            logger.info("👂 Escuchando cola RabbitMQ: %s", nombre)
+            logger.warning("👂 Escuchando cola RabbitMQ: %s", nombre)
         except Exception as exc:  # noqa: BLE001
             logger.warning("⚠️ No se pudo escuchar la cola %s: %s", nombre, exc)
 
-    logger.info("✅ Consumer del bus del Core inicializado.")
+    logger.warning("✅ Consumer del bus del Core inicializado.")
 
 
 async def _on_message(message) -> None:

@@ -32,11 +32,7 @@ BASE = settings.HCE_QUEUE_BASE
 
 # Eventos que HCE va a manejar por el bus. `dir`: 'in' = escuchamos, 'out' = publicamos.
 EVENTOS = [
-    {"name": "hce.orden.creada",        "desc": "HCE creó una orden de estudio (M4/M5)", "dir": "out"},
-    {"name": "hce.receta.creada",       "desc": "HCE emitió una receta (M3 Farmacia)",   "dir": "out"},
-    {"name": "hce.internacion.solicitada", "desc": "HCE solicita internación (M6 Camas)", "dir": "out"},
-    {"name": "hce.notificacion.obligatoria", "desc": "HCE notifica patología (Epidemiología)", "dir": "out"},
-    {"name": "hce.episodio.cerrado",    "desc": "HCE cerró un episodio médico (M6/M7)",  "dir": "out"},
+    {"name": "hce.internacion.solicitud_resuelta", "desc": "M6 resolvió la solicitud de cama (aprobada/rechazada)", "dir": "in"},
 ]
 
 
@@ -49,7 +45,7 @@ async def main() -> None:
         print(f"Core: {settings.CORE_API_URL}")
 
         # 1) Colas
-        for tipo in ("responses", "requests"):
+        for tipo in ("responses",):
             try:
                 r = await core_bus.create_queue(client, BASE, tipo)
                 print(f"[OK] Cola {BASE}.{tipo}: {r}")
