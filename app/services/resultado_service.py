@@ -113,6 +113,7 @@ async def get_resultados_paciente(
                 subtipo=None,
                 link_imagen=None,
                 url_detalle=None,
+                id_externo_estudio=l.id_externo_estudio,
                 analitos=l.analitos,
                 resumen_analitos=l.resumen_analitos,
             )
@@ -131,6 +132,7 @@ async def get_resultados_paciente(
                 subtipo=i.subtipo,
                 link_imagen=i.link_imagen,
                 url_detalle=i.url_detalle,
+                id_externo_estudio=i.id_externo_estudio,
                 analitos=None,
                 resumen_analitos=None,
             )
@@ -164,6 +166,7 @@ async def get_resultado_by_orden(
             subtipo=None,
             link_imagen=None,
             url_detalle=None,
+            id_externo_estudio=l.id_externo_estudio,
             analitos=l.analitos,
             resumen_analitos=l.resumen_analitos,
         )
@@ -184,6 +187,7 @@ async def get_resultado_by_orden(
             subtipo=i.subtipo,
             link_imagen=i.link_imagen,
             url_detalle=i.url_detalle,
+            id_externo_estudio=i.id_externo_estudio,
             analitos=None,
             resumen_analitos=None,
         )

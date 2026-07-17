@@ -92,6 +92,12 @@ async def obtener_detalle_reporte_m5(
     token = request.headers.get("Authorization")
     try:
         return await m5_client.obtener_reporte(report_id, token)
+    except m5_client.M5IntegrationError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={"error": "M5_ERROR", "message": exc.message},
+        )
     except Exception as exc:
         from fastapi import HTTPException
         raise HTTPException(
@@ -118,6 +124,12 @@ async def obtener_imagenes_reporte_m5(
     token = request.headers.get("Authorization")
     try:
         return await m5_client.obtener_imagenes(report_id, token)
+    except m5_client.M5IntegrationError as exc:
+        from fastapi import HTTPException
+        raise HTTPException(
+            status_code=exc.status_code,
+            detail={"error": "M5_ERROR", "message": exc.message},
+        )
     except Exception as exc:
         from fastapi import HTTPException
         raise HTTPException(

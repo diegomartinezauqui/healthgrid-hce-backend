@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from common.enums.enums_orden import TipoEstudio, SubtipoEstudio
 
@@ -107,6 +107,18 @@ class ResultadoEstudioResumen(BaseModel):
     url_detalle: Optional[str] = None
     analitos: Optional[List[dict]] = None
     resumen_analitos: Optional[dict] = None
+
+    # Compatibilidad con M5 / Front
+    id_externo_estudio: Optional[str] = None
+    report_id: Optional[str] = None
+
+    @model_validator(mode="after")
+    def populate_aliases(self):
+        if self.id_externo_estudio and not self.report_id:
+            self.report_id = self.id_externo_estudio
+        elif self.report_id and not self.id_externo_estudio:
+            self.id_externo_estudio = self.report_id
+        return self
 
     model_config = {"from_attributes": True}
 

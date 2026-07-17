@@ -149,6 +149,9 @@ async def notificar_orden_hce(
             logger.info("✅ [M4] Orden %s notificada exitosamente a M4: %s", id_orden, data)
             return data
         except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409:
+                logger.warning("ℹ️ [M4] La orden %s ya estaba registrada en M4 (409 Conflict). Retornando éxito por idempotencia.", id_orden)
+                return {"status": "success", "message": "Ya existe una orden con ese IdOrdenHce (idempotencia)"}
             logger.error("❌ [M4] Error HTTP al notificar orden %s a M4: %s - %s", id_orden, exc.response.status_code, exc.response.text)
             raise RuntimeError(f"Error de M4 al notificar orden: {exc.response.text}") from exc
         except Exception as exc:

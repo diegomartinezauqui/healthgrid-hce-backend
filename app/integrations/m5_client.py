@@ -17,6 +17,13 @@ import logging
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+class M5IntegrationError(Exception):
+    """Excepción para errores devueltos por el Módulo 5 (Imágenes) con su código de estado HTTP."""
+    def __init__(self, status_code: int, message: str):
+        self.status_code = status_code
+        self.message = message
+        super().__init__(message)
+
 
 
 async def notificar_orden(
@@ -54,6 +61,9 @@ async def notificar_orden(
             logger.warning("✅ [M5] Notificación de orden %s enviada con éxito: %s", id_orden, data)
             return data
         except httpx.HTTPStatusError as exc:
+            if exc.response.status_code == 409:
+                logger.warning("ℹ️ [M5] La orden %s ya estaba registrada en M5 (409 Conflict). Retornando éxito por idempotencia.", id_orden)
+                return {"status": "success", "message": "Ya existe una orden registrada con ese ID (idempotencia)"}
             logger.error("❌ [M5] Error al notificar orden %s: %s - %s", id_orden, exc.response.status_code, exc.response.text)
             raise RuntimeError(f"Error de M5 al notificar orden: {exc.response.text}") from exc
         except Exception as exc:
@@ -101,7 +111,7 @@ async def obtener_reporte(report_id: str, token: str | None = None) -> dict:
             return data
         except httpx.HTTPStatusError as exc:
             logger.error("❌ [M5] Error HTTP al obtener reporte %s de M5: %s - %s", report_id, exc.response.status_code, exc.response.text)
-            raise RuntimeError(f"Error de M5 al obtener reporte: {exc.response.text}") from exc
+            raise M5IntegrationError(exc.response.status_code, exc.response.text) from exc
         except Exception as exc:
             logger.error("❌ [M5] Error de red al obtener reporte %s de M5: %s", report_id, exc)
             raise RuntimeError(f"No se pudo conectar con el Módulo 5 (Imágenes): {exc}") from exc
@@ -154,7 +164,7 @@ async def obtener_imagenes(report_id: str, token: str | None = None) -> dict:
             return data
         except httpx.HTTPStatusError as exc:
             logger.error("❌ [M5] Error HTTP al obtener imágenes para reporte %s de M5: %s - %s", report_id, exc.response.status_code, exc.response.text)
-            raise RuntimeError(f"Error de M5 al obtener imágenes: {exc.response.text}") from exc
+            raise M5IntegrationError(exc.response.status_code, exc.response.text) from exc
         except Exception as exc:
             logger.error("❌ [M5] Error de red al obtener imágenes para reporte %s de M5: %s", report_id, exc)
             raise RuntimeError(f"No se pudo conectar con el Módulo 5 (Imágenes): {exc}") from exc

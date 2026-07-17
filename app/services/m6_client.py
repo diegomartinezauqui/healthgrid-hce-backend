@@ -115,7 +115,11 @@ async def solicitar_internacion(
     try:
         import httpx
 
-        url = f"{settings.M6_BASE_URL}/M6/solicitudes-internacion"
+        base_url = settings.M6_BASE_URL.rstrip('/')
+        if not base_url.endswith("/api"):
+            url = f"{base_url}/api/M6/solicitudes-internacion"
+        else:
+            url = f"{base_url}/M6/solicitudes-internacion"
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
@@ -172,7 +176,11 @@ async def solicitar_cirugia_urgente(
         import httpx
         from datetime import datetime
 
-        url = f"{settings.M6_BASE_URL.rstrip('/')}/v1/webhooks/hce/cirugia-urgente"
+        base_url = settings.M6_BASE_URL.rstrip('/')
+        if not base_url.endswith("/api"):
+            url = f"{base_url}/api/v1/webhooks/hce/cirugia-urgente"
+        else:
+            url = f"{base_url}/v1/webhooks/hce/cirugia-urgente"
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
