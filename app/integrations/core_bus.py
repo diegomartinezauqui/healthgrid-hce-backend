@@ -62,7 +62,7 @@ async def publish_event(
         cuerpo["correlation_id"] = correlation_id
 
     if not settings.ENABLE_CORE_BUS:
-        logger.info(
+        logger.warning(
             "🧪 [MOCK Core bus] publish_event type=%s publisher=%s payload=%s",
             event_type_id, publisher_module, cuerpo,
         )
@@ -80,7 +80,7 @@ async def publish_event(
             },
         )
         resp.raise_for_status()
-        logger.info("📤 Evento publicado al Core (type=%s).", event_type_id)
+        logger.warning("📤 Evento publicado al Core (type=%s).", event_type_id)
         return resp.json()
 
 
@@ -107,7 +107,7 @@ async def publish_named(nombre: str, payload: dict, correlation_id: Optional[str
     """
     event_type_id = _event_id_por_nombre(nombre)
     if not event_type_id:
-        logger.info("ℹ️ [Core bus] '%s' sin event_type_id configurado; no se publica.", nombre)
+        logger.warning("ℹ️ [Core bus] '%s' sin event_type_id configurado; no se publica.", nombre)
         return None
     return await publish_event(event_type_id, payload, correlation_id=correlation_id)
 

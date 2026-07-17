@@ -6,7 +6,11 @@ de M6 (aceptada con cama / rechazada), que en producción llegaría por el callb
 `POST /internacion/ingreso`.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
@@ -17,6 +21,7 @@ from app.schemas.solicitud_cama import (
     SolicitudCamaListResponse,
     SolicitudCamaResolver,
     SolicitudCamaSchema,
+    CirugiaUrgenteCreate,
 )
 from app.services import solicitud_cama_service
 
@@ -40,6 +45,7 @@ async def crear_solicitud_cama(
     id_episodio: int,
     body: SolicitudCamaCreate,
     db: DbSession,
+    request: Request,
     _user=Depends(require_permission("hce:internacion:write")),
 ):
     try:
@@ -48,6 +54,59 @@ async def crear_solicitud_cama(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"error": "NOT_FOUND", "message": str(e)})
     except ValueError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, detail={"error": "CONFLICT", "message": str(e)})
+
+    # Notificar a M6 (Camas) — utiliza modo asíncrono si ENABLE_CORE_BUS=true
+    from app.services import m6_client
+    from app.schemas.internacion import SolicitudInternacionRequest
+    from sqlalchemy import select
+    from app.models.evolucion import Evolucion
+
+    try:
+        q_ev = await db.execute(
+            select(Evolucion.id_evolucion, Evolucion.id_profesional)
+            .where(Evolucion.id_episodio == id_episodio)
+            .order_by(Evolucion.fecha.desc())
+        )
+        row = q_ev.first()
+        id_ev, id_prof = row if row else (0, 0)
+
+        # Normalizar sector
+        sect_str = str(body.sector or "").lower()
+        if "uti" in sect_str:
+            sector_val = "UTI"
+        elif "guardia" in sect_str:
+            sector_val = "Guardia_Observacion"
+        else:
+            sector_val = "Sala_Comun"
+
+        # Mapear prioridad
+        prio_str = str(body.prioridad or "").lower()
+        if prio_str == "alta":
+            prio_val = "Alta"
+        elif prio_str == "baja":
+            prio_val = "Baja"
+        else:
+            prio_val = "Media"
+
+        sol_request = SolicitudInternacionRequest(
+            id_paciente=id_paciente,
+            id_episodio=id_episodio,
+            id_evolucion_origen=id_ev,
+            prioridad=prio_val,
+            sector_solicitado=sector_val,
+            diagnostico_principal=body.motivo or "Solicitud de cama desde pestaña",
+            observaciones=body.motivo,
+            id_solicitud=solicitud.id_solicitud,
+            tipo=body.tipo,
+            medico_solicitante_id=id_prof or 0
+        )
+
+        auth_header = request.headers.get("Authorization")
+        token = auth_header.replace("Bearer ", "") if auth_header else None
+        await m6_client.solicitar_internacion(sol_request, token=token)
+    except Exception as exc:
+        logger.error("❌ [M6] No se pudo notificar la solicitud de internación a M6: %s", exc)
+
     return SolicitudCamaSchema.model_validate(solicitud)
 
 
@@ -134,3 +193,120 @@ async def cancelar_solicitud_cama(
     except ValueError as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"error": "UNPROCESSABLE", "message": str(e)})
     return SolicitudCamaSchema.model_validate(solicitud)
+
+
+from app.schemas.webhooks import M6ResolucionWebhook
+import re
+
+@router.post(
+    "/hce/solicitudes/{solicitud_id}/resultado",
+    response_model=SolicitudCamaSchema,
+    summary="Recibir resolución de solicitud de cama (REST callback de M6)",
+    description="Recibe la resolución (aprobada/rechazada) desde M6 de forma directa vía HTTP REST."
+)
+async def webhook_resolucion_cama_legacy(
+    solicitud_id: str,
+    body: dict,
+    db: DbSession,
+):
+    logger.warning("📥 [M6 Legacy REST] Recibida resolución para %s: %s", solicitud_id, body)
+    
+    # Extraer ID numérico
+    digits = re.findall(r'\d+', solicitud_id)
+    id_solicitud = int(digits[0]) if digits else None
+
+    if not id_solicitud:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INVALID_ID", "message": "No se pudo extraer el id numérico de la URL."}
+        )
+
+    # Mapear decisión de forma extremadamente robusta
+    decision_val = body.get("decision") or body.get("resultado") or body.get("accion") or body.get("estado") or ""
+    decision_raw = str(decision_val).lower()
+    decision = "aceptada" if any(x in decision_raw for x in ["aprobada", "aceptada", "aprobar"]) else "rechazada"
+
+    # Mapear cama con fallback
+    cama_val = body.get("cama")
+    if not cama_val and body.get("cama_asignada_id"):
+        cama_val = f"Cama {body.get('cama_asignada_id')}"
+
+    resolver_body = SolicitudCamaResolver(
+        decision=decision,
+        cama=str(cama_val) if cama_val is not None else None,
+        habitacion=str(body.get("habitacion")) if body.get("habitacion") is not None else None,
+        motivo_rechazo=str(body.get("motivo_rechazo") or body.get("motivo") or body.get("observaciones") or "") or None,
+    )
+
+    try:
+        solicitud = await solicitud_cama_service.resolver_solicitud(db, id_solicitud, resolver_body)
+        await db.commit()
+        logger.warning("✅ [M6 Legacy REST] Solicitud %s resuelta como %s", id_solicitud, decision)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(exc)}
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "BAD_REQUEST", "message": str(exc)}
+        )
+
+    return SolicitudCamaSchema.model_validate(solicitud)
+
+
+from fastapi import Request
+
+@router.post(
+    "/patients/{id_paciente}/episodes/{id_episodio}/cirugias-urgentes",
+    status_code=status.HTTP_201_CREATED,
+    summary="Solicitar cirugía urgente a M6 (REST Proxy)",
+    description="Envía una solicitud de cirugía urgente al Módulo 6 de forma sincrónica y devuelve la respuesta."
+)
+async def solicitar_cirugia_urgente_endpoint(
+    id_paciente: int,
+    id_episodio: int,
+    body: CirugiaUrgenteCreate,
+    request: Request,
+    _user=Depends(require_permission("hce:internacion:write")),
+):
+    from app.services import m6_client
+    from datetime import datetime, timezone
+    
+    # Obtener el ID del médico autenticado o fallback
+    medico_solicitante_id = 0
+    if hasattr(_user, "id"):
+        medico_solicitante_id = _user.id
+    elif isinstance(_user, dict) and "id" in _user:
+        medico_solicitante_id = _user["id"]
+        
+    # Generar ID de solicitud único e idempotente
+    import uuid
+    solicitud_urgencia_hce_id = f"URG-{id_paciente}-{id_episodio}-{uuid.uuid4().hex[:8].upper()}"
+
+    payload = {
+        "solicitud_urgencia_hce_id": solicitud_urgencia_hce_id,
+        "paciente_id": id_paciente,
+        "medico_cirujano_id": body.medico_cirujano_id,
+        "medico_solicitante_id": medico_solicitante_id or 1,
+        "fecha_hora_inicio": body.fecha_hora_inicio.isoformat().replace("+00:00", "Z"),
+        "fecha_hora_fin_estimada": body.fecha_hora_fin_estimada.isoformat().replace("+00:00", "Z"),
+        "diagnostico": body.diagnostico or "Urgencia quirúrgica",
+        "hospital_id": body.hospital_id or "1",
+        "specialty_id": body.specialty_id,
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    }
+
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.replace("Bearer ", "") if auth_header else None
+
+    try:
+        resultado = await m6_client.solicitar_cirugia_urgente(payload, token=token)
+        return resultado
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": "M6_ERROR", "message": str(exc)}
+        )
+

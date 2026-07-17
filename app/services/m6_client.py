@@ -56,10 +56,51 @@ async def solicitar_internacion(
     # ── Modo asíncrono vía Core Bus (RabbitMQ) ──
     if settings.ENABLE_CORE_BUS and settings.CORE_EVENT_INTERNACION_SOLICITUD_CREADA_ID > 0:
         from app.integrations.core_bus import publish_named
-        logger.info("📡 [M6] Publicando solicitud de internación al bus de eventos (asíncrono)")
+        from datetime import datetime, timezone
+
+        logger.warning("📡 [M6] Publicando solicitud de internación al bus de eventos (asíncrono)")
+
+        # Mapear prioridad al formato del contrato M6
+        prio_map = {
+            "baja": "BAJA",
+            "media": "MEDIA",
+            "alta": "ALTA",
+            "emergencia": "URGENTE"
+        }
+        prioridad_m6 = prio_map.get(str(solicitud.prioridad).lower(), "MEDIA")
+
+        # Determinar tipo del contrato
+        tipo_m6 = "TRASLADO" if str(solicitud.tipo).lower() == "pase" else "INTERNACION"
+
+        # Construir payload según contrato en docs/M6_INTEGRACION_M1_HCE(2).md
+        payload = {
+            "tipo": tipo_m6,
+            "solicitud_hce_id": f"HCE-SOL-{solicitud.id_solicitud or 0}",
+            "paciente_id": solicitud.id_paciente,
+            "medico_solicitante_id": solicitud.medico_solicitante_id or 1,
+            "hospital_id": "HOSP-1",
+            "observaciones": solicitud.observaciones or solicitud.diagnostico_principal or "",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        }
+
+        if tipo_m6 == "INTERNACION":
+            payload.update({
+                "origen": "GUARDIA",
+                "diagnostico_ingreso": solicitud.diagnostico_principal or "",
+                "prioridad": prioridad_m6,
+                "episodio_id": solicitud.id_episodio,
+                "cama_solicitada_id": solicitud.cama_solicitada_id
+            })
+        else:
+            payload.update({
+                "cama_origen_id": 1,  # ID entero fallback requerido por contrato
+                "motivo_traslado": solicitud.observaciones or "",
+                "cama_destino_solicitada_id": solicitud.cama_destino_solicitada_id
+            })
+
         try:
-            res = await publish_named("internacion.solicitud.creada", solicitud.model_dump(mode="json"))
-            logger.info("✅ [M6] Solicitud de internación publicada exitosamente en el bus: %s", res)
+            res = await publish_named("internacion.solicitud.creada", payload)
+            logger.warning("✅ [M6] Solicitud de internación publicada exitosamente en el bus: %s", res)
             return {
                 "status": "published",
                 "id_solicitud": f"BUS-SOL-{solicitud.id_paciente}",
@@ -117,3 +158,62 @@ async def solicitar_internacion(
     except Exception as exc:
         logger.error("❌ [M6] Error de conexión con M6: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 6 (Camas): {exc}") from exc
+
+
+async def solicitar_cirugia_urgente(
+    payload: dict,
+    token: Optional[str] = None,
+) -> dict:
+    """
+    Enviar una solicitud de cirugía urgente al Módulo 6 (Camas/Quirófanos).
+    REST síncrono.
+    """
+    try:
+        import httpx
+        from datetime import datetime
+
+        url = f"{settings.M6_BASE_URL.rstrip('/')}/v1/webhooks/hce/cirugia-urgente"
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        logger.warning("📡 [M6] Enviando cirugía urgente REST a %s: %s", url, payload)
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                url,
+                json=payload,
+                headers=headers,
+            )
+
+        if response.status_code in (200, 201):
+            logger.warning("✅ [M6] Cirugía urgente registrada en M6 exitosamente.")
+            return response.json()
+        else:
+            logger.error("❌ [M6] Error al registrar cirugía urgente: %s", response.text)
+            raise RuntimeError(f"M6 rechazó la cirugía con status {response.status_code}: {response.text}")
+
+    except ImportError:
+        logger.warning("⚠️ [M6] httpx no disponible. Simulando respuesta de cirugía urgente.")
+        from datetime import datetime
+        return {
+            "mensaje": "Reserva urgente creada (simulada)",
+            "reserva": {
+                "id": 999,
+                "cama_id": 99,
+                "paciente_id": payload.get("paciente_id"),
+                "prioridad": "URGENTE",
+                "origen": "EMERGENCIA",
+                "estado": "RESERVADA",
+                "fecha_hora_inicio": payload.get("fecha_hora_inicio"),
+                "fecha_hora_fin_estimada": payload.get("fecha_hora_fin_estimada"),
+                "observaciones": payload.get("diagnostico"),
+                "created_at": datetime.utcnow().isoformat() + "Z"
+            },
+            "reservas_desplazadas": []
+        }
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        logger.error("❌ [M6] Error de conexión para cirugía urgente: %s", exc)
+        raise RuntimeError(f"No se pudo conectar con M6 para la cirugía urgente: {exc}") from exc

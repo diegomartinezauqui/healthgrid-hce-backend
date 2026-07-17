@@ -133,3 +133,67 @@ async def webhook_reporte_imagen(body: ReporteImagenWebhook, db: DbSession):
         status="success",
         message="Reporte de imagen vinculado correctamente a la Historia Clínica.",
     )
+
+
+import logging
+import re
+from fastapi import HTTPException
+from app.schemas.webhooks import M6ResolucionWebhook
+from app.schemas.solicitud_cama import SolicitudCamaResolver
+from app.services import solicitud_cama_service
+
+logger = logging.getLogger(__name__)
+
+@router.post(
+    "/camas/resolucion",
+    status_code=status.HTTP_200_OK,
+    summary="Webhook para recibir resoluciones de camas de M6",
+    description="Recibe el webhook de M6 cuando una solicitud de cama es resuelta (aprobada/rechazada)."
+)
+async def webhook_resolucion_cama(body: M6ResolucionWebhook, db: DbSession):
+    logger.warning("📥 [M6 Webhook] Recibida resolución de cama: %s", body.model_dump())
+    
+    # Extraer el ID numérico de la solicitud
+    solicitud_id_raw = body.solicitud_hce_id
+    if isinstance(solicitud_id_raw, str):
+        digits = re.findall(r'\d+', solicitud_id_raw)
+        id_solicitud = int(digits[0]) if digits else None
+    else:
+        id_solicitud = solicitud_id_raw
+
+    if not id_solicitud:
+        logger.error("❌ [M6 Webhook] ID de solicitud inválido o no encontrado en: %s", body.solicitud_hce_id)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INVALID_ID", "message": "No se pudo extraer el id de solicitud numérico."}
+        )
+
+    # Mapear decisión
+    decision_raw = (body.decision or "").lower()
+    decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+
+    resolver_body = SolicitudCamaResolver(
+        decision=decision,
+        cama=body.cama,
+        habitacion=body.habitacion,
+        motivo_rechazo=body.motivo_rechazo,
+    )
+
+    try:
+        await solicitud_cama_service.resolver_solicitud(db, id_solicitud, resolver_body)
+        await db.commit()
+        logger.warning("✅ [M6 Webhook] Solicitud %s resuelta exitosamente como %s", id_solicitud, decision)
+    except LookupError as exc:
+        logger.error("❌ [M6 Webhook] No se encontró la solicitud %s: %s", id_solicitud, exc)
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(exc)}
+        )
+    except ValueError as exc:
+        logger.error("❌ [M6 Webhook] Error de validación al resolver solicitud %s: %s", id_solicitud, exc)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "BAD_REQUEST", "message": str(exc)}
+        )
+
+    return {"status": "success", "message": f"Solicitud {id_solicitud} resuelta como {decision}."}

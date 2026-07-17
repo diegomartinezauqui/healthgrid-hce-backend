@@ -33,13 +33,31 @@ async def start_core_bus_consumer() -> None:
         logger.error("❌ aio-pika no está instalado; no se puede consumir RabbitMQ.")
         return
 
-    connection = await aio_pika.connect_robust(
-        host=settings.RABBITMQ_HOST,
-        port=settings.RABBITMQ_PORT,
-        login=settings.RABBITMQ_USER,       # aio-pika escapa el usuario (email) por nosotros
-        password=settings.RABBITMQ_PASSWORD,
-        virtualhost=settings.RABBITMQ_VHOST,
-    )
+    import urllib.parse
+    safe_user = urllib.parse.quote_plus(settings.RABBITMQ_USER)
+    uri_completa = f"amqp://{safe_user}:{settings.RABBITMQ_PASSWORD}@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}{settings.RABBITMQ_VHOST}"
+    uri_enmascarada = f"amqp://{safe_user}:******@{settings.RABBITMQ_HOST}:{settings.RABBITMQ_PORT}{settings.RABBITMQ_VHOST}"
+    
+    logger.warning("🔌 Conectando a RabbitMQ usando URI (Enmascarada): %s", uri_enmascarada)
+    logger.warning("🔌 URI Completa de conexión (para validación): %s", uri_completa)
+
+    try:
+        connection = await aio_pika.connect_robust(
+            host=settings.RABBITMQ_HOST,
+            port=settings.RABBITMQ_PORT,
+            login=settings.RABBITMQ_USER,
+            password=settings.RABBITMQ_PASSWORD,
+            virtualhost=settings.RABBITMQ_VHOST,
+        )
+    except Exception as exc:
+        logger.warning(
+            "⚠️ No se pudo conectar a RabbitMQ (el consumer del Core no arranca). "
+            "Es normal en local si el usuario '%s' aun no fue registrado en el broker de RabbitMQ: %s",
+            settings.RABBITMQ_USER,
+            exc
+        )
+        return
+
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=10)
 
@@ -49,11 +67,11 @@ async def start_core_bus_consumer() -> None:
             # passive=True: la cola ya fue creada vía el Core; solo la referenciamos.
             queue = await channel.declare_queue(nombre, passive=True)
             await queue.consume(_on_message)
-            logger.info("👂 Escuchando cola RabbitMQ: %s", nombre)
+            logger.warning("👂 Escuchando cola RabbitMQ: %s", nombre)
         except Exception as exc:  # noqa: BLE001
             logger.warning("⚠️ No se pudo escuchar la cola %s: %s", nombre, exc)
 
-    logger.info("✅ Consumer del bus del Core inicializado.")
+    logger.warning("✅ Consumer del bus del Core inicializado.")
 
 
 async def _on_message(message) -> None:
@@ -158,28 +176,43 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
             )
             return
 
-        # M6 puede enviar la decisión en mayúsculas (APROBADA/RECHAZADA)
-        decision_raw = (payload.get("decision") or "").lower()
-        decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+        # M6 puede enviar la decisión en mayúsculas (APROBADA/RECHAZADA) bajo 'decision' o 'resultado'
+        decision_val = payload.get("decision") or payload.get("resultado") or ""
+        decision_raw = str(decision_val).lower()
+        decision = "aceptada" if any(x in decision_raw for x in ["aprobada", "aceptada", "aprobar"]) else "rechazada"
+
+        # Extraer ID numérico si viene como string tipo 'HCE-SOL-17'
+        if isinstance(id_solicitud, str):
+            import re
+            digits = re.findall(r'\d+', id_solicitud)
+            id_solicitud_num = int(digits[0]) if digits else None
+        else:
+            id_solicitud_num = id_solicitud
+
+        if id_solicitud_num is None:
+            logger.error(
+                "❌ SOLICITUD_RESUELTA: No se pudo extraer el ID numérico de: %s", id_solicitud
+            )
+            return
 
         resolver_body = SolicitudCamaResolver(
             decision=decision,
             cama=payload.get("cama"),
             habitacion=payload.get("habitacion"),
-            motivo_rechazo=payload.get("motivo_rechazo"),
+            motivo_rechazo=payload.get("motivo_rechazo") or payload.get("motivo") or payload.get("observaciones"),
         )
         async with async_session() as db:
             try:
-                await solicitud_cama_service.resolver_solicitud(db, int(id_solicitud), resolver_body)
+                await solicitud_cama_service.resolver_solicitud(db, id_solicitud_num, resolver_body)
                 await db.commit()
-                logger.info(
+                logger.warning(
                     "✅ Solicitud %s marcada como '%s' por evento SOLICITUD_RESUELTA de M6.",
-                    id_solicitud, decision,
+                    id_solicitud_num, decision,
                 )
             except LookupError as exc:
-                logger.error("❌ SOLICITUD_RESUELTA: solicitud %s no encontrada: %s", id_solicitud, exc)
+                logger.error("❌ SOLICITUD_RESUELTA: solicitud %s no encontrada: %s", id_solicitud_num, exc)
             except ValueError as exc:
-                logger.warning("⚠️ SOLICITUD_RESUELTA: no se pudo resolver solicitud %s: %s", id_solicitud, exc)
+                logger.warning("⚠️ SOLICITUD_RESUELTA: no se pudo resolver solicitud %s: %s", id_solicitud_num, exc)
         return
 
     logger.warning("🤷 Sin handler para el evento '%s'. Payload: %s", event_name, payload)

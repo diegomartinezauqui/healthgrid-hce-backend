@@ -50,6 +50,11 @@ class SolicitudInternacionRequest(BaseModel):
     observaciones: Optional[str] = Field(
         None, examples=["Paciente requiere asistencia respiratoria mecánica inmediata."]
     )
+    id_solicitud: Optional[int] = Field(None, description="ID interno de la solicitud en HCE")
+    tipo: Optional[str] = Field("internacion", description="Tipo de solicitud: 'internacion' o 'pase'")
+    medico_solicitante_id: Optional[int] = Field(None, description="ID del médico solicitante")
+    cama_solicitada_id: Optional[int] = Field(None, description="Cama sugerida para internacion")
+    cama_destino_solicitada_id: Optional[int] = Field(None, description="Cama sugerida para traslado")
 
 
 class IngresoInternacionResponse(BaseModel):

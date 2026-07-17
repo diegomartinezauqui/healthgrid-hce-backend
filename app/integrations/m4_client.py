@@ -15,6 +15,44 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
+async def _resolver_nombres_estudios(
+    estudio_ids: List[int],
+    headers: dict,
+) -> str:
+    """
+    Consulta GET /v1/estudios de M4 y devuelve los nombres de los estudios
+    correspondientes a `estudio_ids`, concatenados con ' / '.
+    M4 prefiere un estudio por orden; si se envían varios se concatenan como fallback.
+    Si falla la consulta, devuelve una cadena vacía.
+    """
+    import httpx
+    url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/estudios"
+    try:
+        async with httpx.AsyncClient(timeout=8.0) as client:
+            resp = await client.get(url, headers=headers)
+            resp.raise_for_status()
+            estudios: list = resp.json()
+        # estudios es una lista de objetos con al menos {"id": ..., "nombre": ...}
+        id_set = set(estudio_ids)
+        nombres = [
+            e.get("nombre", str(e.get("id", "")))
+            for e in estudios
+            if e.get("id") in id_set
+        ]
+        if nombres:
+            return " / ".join(nombres)
+        # Si M4 devuelve objetos con clave distinta, intentamos 'name'
+        nombres_alt = [
+            e.get("name", str(e.get("id", "")))
+            for e in estudios
+            if e.get("id") in id_set
+        ]
+        return " / ".join(nombres_alt) if nombres_alt else ""
+    except Exception as exc:
+        logger.warning("⚠️ [M4] No se pudo obtener nombres de estudios: %s", exc)
+        return ""
+
+
 async def notificar_orden_hce(
     id_orden: int,
     id_paciente: int,
@@ -25,25 +63,43 @@ async def notificar_orden_hce(
     paciente_edad: int,
     paciente_sexo: str,
     alertas_clinicas: Optional[List[dict]] = None,
+    estudio_ids: Optional[List[int]] = None,
     token_auth: Optional[str] = None,
 ) -> dict:
     """
     Envía una orden de laboratorio a M4 usando el nuevo endpoint
     POST /v1/ordenes/hce (idempotente: M4 ignora duplicados por idOrdenHce).
+
+    El campo `descripcionPedido` se construye así (en orden de prioridad):
+      1. Nombre(s) del/los estudio(s) obtenidos desde GET /v1/estudios de M4
+         (concatenados con ' / ' si hay más de uno, aunque M4 prefiere uno solo).
+      2. `descripcion_pedido` enviado por el médico como texto libre.
+      3. Cadena vacía como último fallback.
     """
-    payload = {
-        "idOrden": id_orden,
-        "idPaciente": id_paciente,
-        "descripcionPedido": descripcion_pedido or "",
-        "prioridad": prioridad,
-        "alertasClinicas": alertas_clinicas or [],
-        "pacienteNombre": paciente_nombre,
-        "pacienteDni": paciente_dni,
-        "pacienteEdad": paciente_edad,
-        "pacienteSexo": paciente_sexo,
-    }
+    import httpx
+    headers: dict = {}
+    if token_auth:
+        headers["Authorization"] = token_auth
+
+    # ── Resolver descripción a partir de los estudios de M4 ──────────────
+    descripcion_final = descripcion_pedido or ""
 
     if settings.integraciones_mockeadas:
+        # En modo mock simplemente usamos los IDs como representación
+        if estudio_ids:
+            descripcion_final = descripcion_pedido or f"Estudio(s) ID: {', '.join(map(str, estudio_ids))}"
+        payload = {
+            "idOrden": id_orden,
+            "idPaciente": id_paciente,
+            "descripcionPedido": descripcion_final,
+            "prioridad": prioridad,
+            "alertasClinicas": alertas_clinicas or [],
+            "pacienteNombre": paciente_nombre,
+            "pacienteDni": paciente_dni,
+            "pacienteEdad": paciente_edad,
+            "pacienteSexo": paciente_sexo,
+            "estudioIds": estudio_ids or [],
+        }
         logger.info("🧪 [MOCK M4] POST /v1/ordenes/hce -> %s", payload)
         return {
             "status": "success",
@@ -52,10 +108,35 @@ async def notificar_orden_hce(
             "mock": True,
         }
 
-    import httpx
-    headers = {}
-    if token_auth:
-        headers["Authorization"] = token_auth
+    # Modo live: consultar los nombres reales de los estudios en M4
+    if estudio_ids:
+        nombres_estudios = await _resolver_nombres_estudios(estudio_ids, headers)
+        if nombres_estudios:
+            descripcion_final = nombres_estudios
+            logger.info(
+                "📋 [M4] Descripción de orden %s construida desde GET /v1/estudios: '%s'",
+                id_orden,
+                descripcion_final,
+            )
+        else:
+            logger.warning(
+                "⚠️ [M4] No se obtuvieron nombres de estudios para IDs %s; usando descripción manual: '%s'",
+                estudio_ids,
+                descripcion_final,
+            )
+
+    payload = {
+        "idOrden": id_orden,
+        "idPaciente": id_paciente,
+        "descripcionPedido": descripcion_final,
+        "prioridad": prioridad,
+        "alertasClinicas": alertas_clinicas or [],
+        "pacienteNombre": paciente_nombre,
+        "pacienteDni": paciente_dni,
+        "pacienteEdad": paciente_edad,
+        "pacienteSexo": paciente_sexo,
+        "estudioIds": estudio_ids or [],
+    }
 
     url = f"{settings.M4_BASE_URL.rstrip('/')}/v1/ordenes/hce"
     logger.info("📡 [M4] Notificando orden %s a M4: %s", id_orden, url)

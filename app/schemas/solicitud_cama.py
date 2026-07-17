@@ -24,6 +24,17 @@ class SolicitudCamaResolver(BaseModel):
     motivo_rechazo: Optional[str] = Field(None, examples=["No hay camas disponibles en el sector."])
 
 
+class CirugiaUrgenteCreate(BaseModel):
+    """Body para solicitar una cirugía urgente a M6."""
+
+    medico_cirujano_id: int = Field(..., examples=[45])
+    fecha_hora_inicio: datetime = Field(..., examples=["2026-07-17T18:00:00Z"])
+    fecha_hora_fin_estimada: datetime = Field(..., examples=["2026-07-17T20:00:00Z"])
+    diagnostico: Optional[str] = Field(None, examples=["Apendicitis aguda"])
+    hospital_id: Optional[str] = Field(None, examples=["1"])
+    specialty_id: Optional[int] = Field(None, examples=[3])
+
+
 class SolicitudCamaSchema(BaseModel):
     """Respuesta de una solicitud de cama."""
 

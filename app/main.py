@@ -36,6 +36,11 @@ from app.routers import (
 )
 
 
+import logging
+
+logger = logging.getLogger("app.main")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -43,22 +48,24 @@ async def lifespan(app: FastAPI):
     Aquí se podrían inicializar conexiones a Kafka, caches, etc.
     """
     # ── Startup ──
-    print("HCE Module starting up...")
+    logger.warning("HCE Module starting up...")
     consumer_task = None
     if settings.ENABLE_KAFKA:
         await kafka_producer.start()
         consumer_task = asyncio.create_task(start_kafka_consumer())
     else:
-        print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
+        logger.warning("[AVISO] Kafka esta deshabilitado en configuracion. Los eventos se loguearan localmente.")
 
     # Bus de eventos del Core (modelo real: RabbitMQ + POST /events/log).
     if settings.ENABLE_CORE_BUS:
         from app.integrations.rabbit_consumer import start_core_bus_consumer
+        from app.services.core_subscription import registrar_suscripciones_core
         asyncio.create_task(start_core_bus_consumer())
+        asyncio.create_task(registrar_suscripciones_core())
 
     yield
     # ── Shutdown ──
-    print("HCE Module shutting down...")
+    logger.warning("HCE Module shutting down...")
     if consumer_task is not None and not consumer_task.done():
         consumer_task.cancel()
         try:
@@ -79,6 +86,26 @@ app = FastAPI(
     lifespan=lifespan,
     root_path="",
 )
+
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    logger.warning("❌ [FastAPI 422] Error de validación en ruta %s %s: %s", request.method, request.url.path, exc.errors())
+    try:
+        body = await request.json()
+        logger.warning("Payload JSON que causó 422: %s", body)
+    except Exception:
+        try:
+            body = await request.body()
+            logger.warning("Payload raw que causó 422: %s", body)
+        except Exception:
+            pass
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
 
 # ─── Configuración de CORS ──────────────────────────────────────
 # Los orígenes se leen de la variable de entorno ALLOWED_ORIGINS (config.py).

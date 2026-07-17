@@ -32,11 +32,7 @@ BASE = settings.HCE_QUEUE_BASE
 
 # Eventos que HCE va a manejar por el bus. `dir`: 'in' = escuchamos, 'out' = publicamos.
 EVENTOS = [
-    {"name": "hce.orden.creada",        "desc": "HCE creó una orden de estudio (M4/M5)", "dir": "out"},
-    {"name": "hce.receta.creada",       "desc": "HCE emitió una receta (M3 Farmacia)",   "dir": "out"},
-    {"name": "hce.internacion.solicitada", "desc": "HCE solicita internación (M6 Camas)", "dir": "out"},
-    {"name": "hce.notificacion.obligatoria", "desc": "HCE notifica patología (Epidemiología)", "dir": "out"},
-    {"name": "hce.episodio.cerrado",    "desc": "HCE cerró un episodio médico (M6/M7)",  "dir": "out"},
+    {"name": "hce.internacion.solicitud_resuelta", "desc": "M6 resolvió la solicitud de cama (aprobada/rechazada)", "dir": "in"},
 ]
 
 
@@ -46,30 +42,30 @@ async def main() -> None:
         return
 
     async with httpx.AsyncClient(timeout=15.0) as client:
-        print(f"🔗 Core: {settings.CORE_API_URL}")
+        print(f"Core: {settings.CORE_API_URL}")
 
         # 1) Colas
-        for tipo in ("responses", "requests"):
+        for tipo in ("responses",):
             try:
                 r = await core_bus.create_queue(client, BASE, tipo)
-                print(f"✅ Cola {BASE}.{tipo}: {r}")
+                print(f"[OK] Cola {BASE}.{tipo}: {r}")
             except Exception as exc:  # noqa: BLE001
-                print(f"⚠️ Cola {BASE}.{tipo}: {exc}")
+                print(f"[ERROR] Cola {BASE}.{tipo}: {exc}")
 
         # 2) Eventos + 3) bindings de los que escuchamos (dir=in) a nuestras colas
-        print("\n── Eventos ──")
+        print("\n-- Eventos --")
         for ev in EVENTOS:
             try:
                 creado = await core_bus.create_event(client, ev["name"], ev["desc"], "hce")
                 event_id = creado.get("id")
-                print(f"✅ Evento {ev['name']} → id={event_id}  ({ev['dir']})")
+                print(f"[OK] Evento {ev['name']} -> id={event_id}  ({ev['dir']})")
                 if ev["dir"] == "in" and event_id:
-                    await core_bus.create_binding(client, event_id, f"{BASE}.responses")
-                    print(f"   ↳ bindeado a {BASE}.responses")
+                     await core_bus.create_binding(client, event_id, f"{BASE}.responses")
+                     print(f"   ↳ bindeado a {BASE}.responses")
             except Exception as exc:  # noqa: BLE001
-                print(f"⚠️ Evento {ev['name']}: {exc}")
+                print(f"[ERROR] Evento {ev['name']}: {exc}")
 
-    print("\n🏁 Setup finalizado. Compartí los IDs de evento con los otros grupos "
+    print("\nSetup finalizado. Comparti los IDs de evento con los otros grupos "
           "y cargalos en la config (ej. CORE_EVENT_ORDEN_CREADA_ID).")
 
 
