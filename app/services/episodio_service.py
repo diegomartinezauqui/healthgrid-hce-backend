@@ -117,6 +117,7 @@ async def actualizar_episodio(
     id_paciente: int,
     id_episodio: int,
     data: EpisodioUpdate,
+    token_auth: Optional[str] = None,
 ) -> Optional[Episodio]:
     """
     Actualiza parcialmente un episodio médico existente.
@@ -153,6 +154,36 @@ async def actualizar_episodio(
                 }
                 await publish_named("internacion.alta-medica.registrada", payload_alta)
                 logger.warning("✅ [M6] Alta médica notificada al bus de eventos: %s", payload_alta)
+
+            # --- NUEVA INTEGRACIÓN DIRECTA CON M7 ---
+            # Notificar a M7 (Facturación) que el episodio está definitivamente cerrado y listo para facturar.
+            try:
+                from app.services import m7_client
+                # Determinar tipo de episodio para M7
+                tipo_str = str(episodio.tipo.value if hasattr(episodio.tipo, "value") else episodio.tipo).lower()
+                if "internacion" in tipo_str:
+                    tipo_m7 = "INTERNACION"
+                elif "guardia" in tipo_str:
+                    tipo_m7 = "GUARDIA"
+                elif "consulta-externa" in tipo_str:
+                    tipo_m7 = "CONSULTA"
+                elif "cirugia" in tipo_str:
+                    tipo_m7 = "CIRUGIA"
+                else:
+                    tipo_m7 = "OTRO"
+
+                fecha_cierre_str = episodio.fecha_cierre.isoformat().replace("+00:00", "Z")
+                res_m7 = await m7_client.notificar_episodio_cerrado(
+                    id_episodio=id_episodio,
+                    id_paciente=id_paciente,
+                    tipo_episodio=tipo_m7,
+                    fecha_cierre=fecha_cierre_str,
+                    token=token_auth,
+                )
+                logger.warning("✅ [M7] Cierre de episodio notificado a M7: %s", res_m7)
+            except Exception as e:
+                logger.error("⚠️ [M7] Error al notificar cierre de episodio a M7: %s", e)
+
         except Exception as exc:
             logger.warning("⚠️ No se pudo publicar evento de cierre/alta al bus del Core: %s", exc)
 

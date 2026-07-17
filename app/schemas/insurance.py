@@ -16,5 +16,9 @@ class InsuranceResponse(BaseModel):
     planId: Optional[str] = Field(None, examples=["2"])
     numero_afiliado: Optional[str] = Field(None, examples=["1234567890"])
 
+    # Compatibilidad con M7 (Facturación)
+    id_obra_social: Optional[int] = Field(None, description="Alias de entidadFinanciadoraId para M7")
+    codigo_plan: Optional[int] = Field(None, description="Alias de planId para M7")
+
     model_config = {"from_attributes": True}
 

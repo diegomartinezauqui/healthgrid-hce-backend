@@ -1,9 +1,7 @@
-"""Schemas de episodios y actos médicos (Integración M7 Facturación)."""
-
 from datetime import datetime
 from typing import List, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from common.enums.enums_episodio import EstadoEpisodio, TipoActoMedico, TipoEpisodio
 
@@ -103,7 +101,7 @@ class EpisodioDetalle(BaseModel):
     id_episodio: int = Field(..., examples=[700])
     id_paciente: int = Field(..., examples=[10500])
     tipo: TipoEpisodio = Field(..., examples=["internacion"])
-    estado: EstadoEpisodio = Field(..., examples=["closed"])
+    estado: str = Field(..., examples=["CERRADO"])
     id_sede: int = Field(..., examples=[3])
     id_medico_responsable: int = Field(..., examples=[42])
     diagnostico_principal: Optional[str] = Field(
@@ -112,6 +110,58 @@ class EpisodioDetalle(BaseModel):
     fecha_apertura: datetime = Field(..., examples=["2025-03-10T09:00:00Z"])
     fecha_cierre: Optional[datetime] = Field(None, examples=["2025-03-15T11:00:00Z"])
     actos_medicos: List[ActoMedicoSchema] = Field(default_factory=list)
+
+    # Campos de compatibilidad con M7 (Facturación)
+    episodioId: Optional[int] = None
+    pacienteId: Optional[int] = None
+    tipoEpisodio: Optional[str] = None
+    fechaInicio: Optional[datetime] = None
+    fechaCierre: Optional[datetime] = None
+
+    @model_validator(mode="after")
+    def populate_m7_fields(self):
+        self.episodioId = self.id_episodio
+        self.pacienteId = self.id_paciente
+        self.fechaInicio = self.fecha_apertura
+        self.fechaCierre = self.fecha_cierre
+        
+        # Mapear tipo a tipoEpisodio
+        tipo_val = self.tipo.value if hasattr(self.tipo, "value") else self.tipo
+        if tipo_val == "internacion":
+            self.tipoEpisodio = "INTERNACION"
+        elif tipo_val == "guardia":
+            self.tipoEpisodio = "GUARDIA"
+        elif tipo_val == "consulta-externa":
+            self.tipoEpisodio = "CONSULTA"
+        elif tipo_val == "cirugia":
+            self.tipoEpisodio = "CIRUGIA"
+        else:
+            self.tipoEpisodio = "OTRO"
+            
+        # Mapear estado a mayúsculas
+        est_val = self.estado.value if hasattr(self.estado, "value") else self.estado
+        if str(est_val).lower() in ("closed", "cerrado"):
+            self.estado = "CERRADO"
+        else:
+            self.estado = "open"
+            
+        return self
+
+    model_config = {"from_attributes": True}
+
+
+class M7ActoMedicoResponse(BaseModel):
+    """Acto médico con el formato plano esperado por M7."""
+
+    idActoMedico: int = Field(..., examples=[88001])
+    episodioId: int = Field(..., examples=[700])
+    pacienteId: int = Field(..., examples=[10500])
+    codigoPrestacion: Optional[str] = Field(None, examples=["80.01.02"])
+    descripcion: Optional[str] = Field(None, examples=["Consulta médica especializada"])
+    cantidad: int = Field(..., examples=[1])
+    fechaRealizacion: datetime = Field(..., examples=["2026-07-15T14:30:00Z"])
+    estado: str = Field(..., examples=["REALIZADO"])
+    profesionalId: Optional[int] = Field(None, examples=[458])
 
     model_config = {"from_attributes": True}
 
