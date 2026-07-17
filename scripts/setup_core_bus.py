@@ -47,7 +47,7 @@ async def main() -> None:
         print(f"Core: {settings.CORE_API_URL}")
 
         # 1) Crear cola de HCE
-        for tipo in ("responses",):
+        for tipo in ("responses", "requests"):
             try:
                 r = await core_bus.create_queue(client, BASE, tipo)
                 print(f"[OK] Cola {BASE}.{tipo}: {r}")
