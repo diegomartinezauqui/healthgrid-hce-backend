@@ -41,3 +41,14 @@ class ReporteImagenWebhook(BaseModel):
     informe: Optional[str] = Field(None, examples=["Sin hallazgos patológicos."])
     profesional_firmante: Optional[str] = Field(None, examples=["Dra. Gómez (Radiología)"])
     fecha_resultado: Optional[datetime] = None
+
+
+# ─── Módulo 6 (Camas) Webhook Schemas ──────────────────────────────
+class M6ResolucionWebhook(BaseModel):
+    """Payload específico del webhook de resolución de cama enviado por M6."""
+
+    solicitud_hce_id: str = Field(..., examples=["HCE-SOL-12"])
+    decision: str = Field(..., examples=["APROBADA", "RECHAZADA"])
+    cama: Optional[str] = Field(None, examples=["Cama 4"])
+    habitacion: Optional[str] = Field(None, examples=["Hab 201"])
+    motivo_rechazo: Optional[str] = Field(None, examples=["No hay camas disponibles."])

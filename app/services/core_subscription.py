@@ -63,3 +63,25 @@ async def registrar_suscripciones_core():
                 )
     except Exception as e:
         logger.warning("⚠️ No se pudo conectar con el Core para registrar suscripción de Laboratorio: %s (Core podría estar apagado en desarrollo).", e)
+
+    # 2. Registrar la suscripción HTTP para la resolución de camas (Módulo 6 - Evento 22)
+    suscripcion_cama = {
+        "event_type_id": settings.CORE_EVENT_SOLICITUD_RESUELTA_ID,
+        "subscriber_module": "modulo1",
+        "endpoint_url": f"{settings.HCE_PUBLIC_URL}/api/v1/webhook/camas/resolucion"
+    }
+
+    try:
+        url_core = f"{settings.CORE_BASE_URL}/events/subscriptions"
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            res_core = await client.post(url_core, json=suscripcion_cama)
+            if res_core.status_code in (200, 201):
+                logger.info("✅ Webhook de Camas registrado en Core con éxito: %s", suscripcion_cama["endpoint_url"])
+            else:
+                logger.warning(
+                    "⚠️ Core rechazó la suscripción de Camas (status %s): %s. Se reintentará en despliegue real.",
+                    res_core.status_code,
+                    res_core.text
+                )
+    except Exception as e:
+        logger.warning("⚠️ No se pudo conectar con el Core para registrar suscripción de Camas: %s", e)
