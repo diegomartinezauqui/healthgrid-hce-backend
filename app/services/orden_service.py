@@ -164,6 +164,7 @@ async def crear_orden(
                 paciente_edad=int(paciente_edad) if paciente_edad else 0,
                 paciente_sexo=paciente_sexo,
                 alertas_clinicas=alertas_payload,
+                estudio_ids=estudio_ids,
                 token_auth=token_auth,
             )
         )
