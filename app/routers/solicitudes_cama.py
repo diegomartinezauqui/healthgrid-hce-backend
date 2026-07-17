@@ -6,7 +6,11 @@ de M6 (aceptada con cama / rechazada), que en producción llegaría por el callb
 `POST /internacion/ingreso`.
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.auth.permissions import require_permission
 from app.dependencies import DbSession
@@ -40,6 +44,7 @@ async def crear_solicitud_cama(
     id_episodio: int,
     body: SolicitudCamaCreate,
     db: DbSession,
+    request: Request,
     _user=Depends(require_permission("hce:internacion:write")),
 ):
     try:
@@ -48,6 +53,59 @@ async def crear_solicitud_cama(
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail={"error": "NOT_FOUND", "message": str(e)})
     except ValueError as e:
         raise HTTPException(status.HTTP_409_CONFLICT, detail={"error": "CONFLICT", "message": str(e)})
+
+    # Notificar a M6 (Camas) — utiliza modo asíncrono si ENABLE_CORE_BUS=true
+    from app.services import m6_client
+    from app.schemas.internacion import SolicitudInternacionRequest
+    from sqlalchemy import select
+    from app.models.evolucion import Evolucion
+
+    try:
+        q_ev = await db.execute(
+            select(Evolucion.id_evolucion, Evolucion.id_profesional)
+            .where(Evolucion.id_episodio == id_episodio)
+            .order_by(Evolucion.fecha.desc())
+        )
+        row = q_ev.first()
+        id_ev, id_prof = row if row else (0, 0)
+
+        # Normalizar sector
+        sect_str = str(body.sector or "").lower()
+        if "uti" in sect_str:
+            sector_val = "UTI"
+        elif "guardia" in sect_str:
+            sector_val = "Guardia_Observacion"
+        else:
+            sector_val = "Sala_Comun"
+
+        # Mapear prioridad
+        prio_str = str(body.prioridad or "").lower()
+        if prio_str == "alta":
+            prio_val = "Alta"
+        elif prio_str == "baja":
+            prio_val = "Baja"
+        else:
+            prio_val = "Media"
+
+        sol_request = SolicitudInternacionRequest(
+            id_paciente=id_paciente,
+            id_episodio=id_episodio,
+            id_evolucion_origen=id_ev,
+            prioridad=prio_val,
+            sector_solicitado=sector_val,
+            diagnostico_principal=body.motivo or "Solicitud de cama desde pestaña",
+            observaciones=body.motivo,
+            id_solicitud=solicitud.id_solicitud,
+            tipo=body.tipo,
+            medico_solicitante_id=id_prof or 0
+        )
+
+        auth_header = request.headers.get("Authorization")
+        token = auth_header.replace("Bearer ", "") if auth_header else None
+        await m6_client.solicitar_internacion(sol_request, token=token)
+    except Exception as exc:
+        logger.error("❌ [M6] No se pudo notificar la solicitud de internación a M6: %s", exc)
+
     return SolicitudCamaSchema.model_validate(solicitud)
 
 

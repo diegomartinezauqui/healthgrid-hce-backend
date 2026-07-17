@@ -56,10 +56,51 @@ async def solicitar_internacion(
     # ── Modo asíncrono vía Core Bus (RabbitMQ) ──
     if settings.ENABLE_CORE_BUS and settings.CORE_EVENT_INTERNACION_SOLICITUD_CREADA_ID > 0:
         from app.integrations.core_bus import publish_named
-        logger.info("📡 [M6] Publicando solicitud de internación al bus de eventos (asíncrono)")
+        from datetime import datetime, timezone
+
+        logger.warning("📡 [M6] Publicando solicitud de internación al bus de eventos (asíncrono)")
+
+        # Mapear prioridad al formato del contrato M6
+        prio_map = {
+            "baja": "BAJA",
+            "media": "MEDIA",
+            "alta": "ALTA",
+            "emergencia": "URGENTE"
+        }
+        prioridad_m6 = prio_map.get(str(solicitud.prioridad).lower(), "MEDIA")
+
+        # Determinar tipo del contrato
+        tipo_m6 = "TRASLADO" if str(solicitud.tipo).lower() == "pase" else "INTERNACION"
+
+        # Construir payload según contrato en docs/M6_INTEGRACION_M1_HCE(2).md
+        payload = {
+            "tipo": tipo_m6,
+            "solicitud_hce_id": f"HCE-SOL-{solicitud.id_solicitud or 0}",
+            "paciente_id": solicitud.id_paciente,
+            "medico_solicitante_id": solicitud.medico_solicitante_id or 1,
+            "hospital_id": "HOSP-1",
+            "observaciones": solicitud.observaciones or solicitud.diagnostico_principal or "",
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        }
+
+        if tipo_m6 == "INTERNACION":
+            payload.update({
+                "origen": "GUARDIA",
+                "diagnostico_ingreso": solicitud.diagnostico_principal or "",
+                "prioridad": prioridad_m6,
+                "episodio_id": solicitud.id_episodio,
+                "cama_solicitada_id": solicitud.cama_solicitada_id
+            })
+        else:
+            payload.update({
+                "cama_origen_id": 1,  # ID entero fallback requerido por contrato
+                "motivo_traslado": solicitud.observaciones or "",
+                "cama_destino_solicitada_id": solicitud.cama_destino_solicitada_id
+            })
+
         try:
-            res = await publish_named("internacion.solicitud.creada", solicitud.model_dump(mode="json"))
-            logger.info("✅ [M6] Solicitud de internación publicada exitosamente en el bus: %s", res)
+            res = await publish_named("internacion.solicitud.creada", payload)
+            logger.warning("✅ [M6] Solicitud de internación publicada exitosamente en el bus: %s", res)
             return {
                 "status": "published",
                 "id_solicitud": f"BUS-SOL-{solicitud.id_paciente}",

@@ -36,6 +36,11 @@ from app.routers import (
 )
 
 
+import logging
+
+logger = logging.getLogger("app.main")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -43,13 +48,13 @@ async def lifespan(app: FastAPI):
     Aquí se podrían inicializar conexiones a Kafka, caches, etc.
     """
     # ── Startup ──
-    print("HCE Module starting up...")
+    logger.warning("HCE Module starting up...")
     consumer_task = None
     if settings.ENABLE_KAFKA:
         await kafka_producer.start()
         consumer_task = asyncio.create_task(start_kafka_consumer())
     else:
-        print("⚠️ Kafka está deshabilitado en configuración. Los eventos se loguearán localmente.")
+        logger.warning("[AVISO] Kafka esta deshabilitado en configuracion. Los eventos se loguearan localmente.")
 
     # Bus de eventos del Core (modelo real: RabbitMQ + POST /events/log).
     if settings.ENABLE_CORE_BUS:
@@ -58,7 +63,7 @@ async def lifespan(app: FastAPI):
 
     yield
     # ── Shutdown ──
-    print("HCE Module shutting down...")
+    logger.warning("HCE Module shutting down...")
     if consumer_task is not None and not consumer_task.done():
         consumer_task.cancel()
         try:
