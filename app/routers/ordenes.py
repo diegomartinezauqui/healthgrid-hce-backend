@@ -28,6 +28,36 @@ router = APIRouter()
 
 
 @router.get(
+    "/estudios/laboratorio",
+    summary="Listar estudios disponibles en M4 (catálogo de laboratorio)",
+    description=(
+        "Consulta el catálogo de estudios del Módulo 4 (Laboratorio). "
+        "El médico selecciona los estudios deseados de esta lista para luego crear la orden. "
+        "Cada estudio agrupa sus analitos con rangos de referencia."
+    ),
+    responses={
+        401: {"model": ErrorResponse},
+        403: {"model": ErrorResponse},
+        502: {"model": ErrorResponse, "description": "M4 no disponible."},
+    },
+)
+async def listar_estudios(
+    _user=Depends(require_permission("hce:ordenes:read")),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+):
+    from app.integrations import m4_client
+    token_auth = f"Bearer {credentials.credentials}" if credentials else None
+    try:
+        estudios = await m4_client.obtener_estudios(token_auth=token_auth)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": "M4_UNAVAILABLE", "message": f"No se pudo obtener el catálogo de M4: {exc}"},
+        )
+    return {"status": "success", "cantidad": len(estudios), "data": estudios}
+
+
+@router.get(
     "/analitos/laboratorio",
     summary="Listar analitos disponibles en M4 (catálogo de laboratorio)",
     description=(

@@ -150,7 +150,7 @@ async def crear_orden(
         # Obtener alertas clínicas del paciente para el Smart Payload de M4
         alertas = await alerta_repo.get_activas_by_paciente(db, id_paciente)
         alertas_payload = [
-            {"tipo": a.tipo, "descripcion": a.descripcion}
+            {"tipo": a.tipo, "severidad": a.severidad, "descripcion": a.descripcion}
             for a in alertas
         ]
         asyncio.create_task(

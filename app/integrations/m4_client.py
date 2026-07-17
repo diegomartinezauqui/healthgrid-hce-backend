@@ -309,8 +309,9 @@ async def obtener_analitos(
 
 async def obtener_estudios(token_auth: Optional[str] = None) -> List[dict]:
     """
-    [LEGADO] Obtiene el catálogo de estudios en M4 (GET /v1/estudios).
-    Usar obtener_analitos() para el nuevo contrato.
+    Obtiene el catálogo de estudios de M4 (GET /v1/estudios).
+    Cada estudio agrupa sus analitos con rangos de referencia.
+    Los `id` de estos estudios son los que se envían en `estudioIds` al crear una orden.
     """
     if settings.integraciones_mockeadas:
         logger.info("🧪 [MOCK M4] GET /v1/estudios (legado)")
