@@ -205,10 +205,10 @@ import re
 )
 async def webhook_resolucion_cama_legacy(
     solicitud_id: str,
-    body: M6ResolucionWebhook,
+    body: dict,
     db: DbSession,
 ):
-    logger.warning("📥 [M6 Legacy REST] Recibida resolución para %s: %s", solicitud_id, body.model_dump())
+    logger.warning("📥 [M6 Legacy REST] Recibida resolución para %s: %s", solicitud_id, body)
     
     # Extraer ID numérico
     digits = re.findall(r'\d+', solicitud_id)
@@ -220,15 +220,21 @@ async def webhook_resolucion_cama_legacy(
             detail={"error": "INVALID_ID", "message": "No se pudo extraer el id numérico de la URL."}
         )
 
-    # Mapear decisión
-    decision_raw = (body.decision or "").lower()
-    decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+    # Mapear decisión de forma extremadamente robusta
+    decision_val = body.get("decision") or body.get("accion") or body.get("estado") or ""
+    decision_raw = str(decision_val).lower()
+    decision = "aceptada" if any(x in decision_raw for x in ["aprobada", "aceptada", "aprobar"]) else "rechazada"
+
+    # Mapear cama con fallback
+    cama_val = body.get("cama")
+    if not cama_val and body.get("cama_asignada_id"):
+        cama_val = f"Cama {body.get('cama_asignada_id')}"
 
     resolver_body = SolicitudCamaResolver(
         decision=decision,
-        cama=body.cama,
-        habitacion=body.habitacion,
-        motivo_rechazo=body.motivo_rechazo,
+        cama=str(cama_val) if cama_val is not None else None,
+        habitacion=str(body.get("habitacion")) if body.get("habitacion") is not None else None,
+        motivo_rechazo=str(body.get("motivo_rechazo") or body.get("motivo") or body.get("observaciones") or "") or None,
     )
 
     try:

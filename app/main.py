@@ -87,6 +87,26 @@ app = FastAPI(
     root_path="",
 )
 
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    logger.warning("❌ [FastAPI 422] Error de validación en ruta %s %s: %s", request.method, request.url.path, exc.errors())
+    try:
+        body = await request.json()
+        logger.warning("Payload JSON que causó 422: %s", body)
+    except Exception:
+        try:
+            body = await request.body()
+            logger.warning("Payload raw que causó 422: %s", body)
+        except Exception:
+            pass
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
+
 # ─── Configuración de CORS ──────────────────────────────────────
 # Los orígenes se leen de la variable de entorno ALLOWED_ORIGINS (config.py).
 # En desarrollo el default incluye localhost:3000/5173/5174.

@@ -198,7 +198,7 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
             decision=decision,
             cama=payload.get("cama"),
             habitacion=payload.get("habitacion"),
-            motivo_rechazo=payload.get("motivo_rechazo"),
+            motivo_rechazo=payload.get("motivo_rechazo") or payload.get("motivo") or payload.get("observaciones"),
         )
         async with async_session() as db:
             try:
