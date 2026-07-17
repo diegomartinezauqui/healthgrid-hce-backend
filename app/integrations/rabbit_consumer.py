@@ -180,6 +180,20 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
         decision_raw = (payload.get("decision") or "").lower()
         decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
 
+        # Extraer ID numérico si viene como string tipo 'HCE-SOL-17'
+        if isinstance(id_solicitud, str):
+            import re
+            digits = re.findall(r'\d+', id_solicitud)
+            id_solicitud_num = int(digits[0]) if digits else None
+        else:
+            id_solicitud_num = id_solicitud
+
+        if id_solicitud_num is None:
+            logger.error(
+                "❌ SOLICITUD_RESUELTA: No se pudo extraer el ID numérico de: %s", id_solicitud
+            )
+            return
+
         resolver_body = SolicitudCamaResolver(
             decision=decision,
             cama=payload.get("cama"),
@@ -188,16 +202,16 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
         )
         async with async_session() as db:
             try:
-                await solicitud_cama_service.resolver_solicitud(db, int(id_solicitud), resolver_body)
+                await solicitud_cama_service.resolver_solicitud(db, id_solicitud_num, resolver_body)
                 await db.commit()
-                logger.info(
+                logger.warning(
                     "✅ Solicitud %s marcada como '%s' por evento SOLICITUD_RESUELTA de M6.",
-                    id_solicitud, decision,
+                    id_solicitud_num, decision,
                 )
             except LookupError as exc:
-                logger.error("❌ SOLICITUD_RESUELTA: solicitud %s no encontrada: %s", id_solicitud, exc)
+                logger.error("❌ SOLICITUD_RESUELTA: solicitud %s no encontrada: %s", id_solicitud_num, exc)
             except ValueError as exc:
-                logger.warning("⚠️ SOLICITUD_RESUELTA: no se pudo resolver solicitud %s: %s", id_solicitud, exc)
+                logger.warning("⚠️ SOLICITUD_RESUELTA: no se pudo resolver solicitud %s: %s", id_solicitud_num, exc)
         return
 
     logger.warning("🤷 Sin handler para el evento '%s'. Payload: %s", event_name, payload)

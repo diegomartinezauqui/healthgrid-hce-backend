@@ -47,7 +47,7 @@ class ReporteImagenWebhook(BaseModel):
 class M6ResolucionWebhook(BaseModel):
     """Payload específico del webhook de resolución de cama enviado por M6."""
 
-    solicitud_hce_id: str = Field(..., examples=["HCE-SOL-12"])
+    solicitud_hce_id: Optional[str] = Field(None, examples=["HCE-SOL-12"])
     decision: str = Field(..., examples=["APROBADA", "RECHAZADA"])
     cama: Optional[str] = Field(None, examples=["Cama 4"])
     habitacion: Optional[str] = Field(None, examples=["Hab 201"])

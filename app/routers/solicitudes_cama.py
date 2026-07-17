@@ -192,3 +192,59 @@ async def cancelar_solicitud_cama(
     except ValueError as e:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail={"error": "UNPROCESSABLE", "message": str(e)})
     return SolicitudCamaSchema.model_validate(solicitud)
+
+
+from app.schemas.webhooks import M6ResolucionWebhook
+import re
+
+@router.post(
+    "/hce/solicitudes/{solicitud_id}/resultado",
+    response_model=SolicitudCamaSchema,
+    summary="Recibir resolución de solicitud de cama (REST callback de M6)",
+    description="Recibe la resolución (aprobada/rechazada) desde M6 de forma directa vía HTTP REST."
+)
+async def webhook_resolucion_cama_legacy(
+    solicitud_id: str,
+    body: M6ResolucionWebhook,
+    db: DbSession,
+):
+    logger.warning("📥 [M6 Legacy REST] Recibida resolución para %s: %s", solicitud_id, body.model_dump())
+    
+    # Extraer ID numérico
+    digits = re.findall(r'\d+', solicitud_id)
+    id_solicitud = int(digits[0]) if digits else None
+
+    if not id_solicitud:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "INVALID_ID", "message": "No se pudo extraer el id numérico de la URL."}
+        )
+
+    # Mapear decisión
+    decision_raw = (body.decision or "").lower()
+    decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+
+    resolver_body = SolicitudCamaResolver(
+        decision=decision,
+        cama=body.cama,
+        habitacion=body.habitacion,
+        motivo_rechazo=body.motivo_rechazo,
+    )
+
+    try:
+        solicitud = await solicitud_cama_service.resolver_solicitud(db, id_solicitud, resolver_body)
+        await db.commit()
+        logger.warning("✅ [M6 Legacy REST] Solicitud %s resuelta como %s", id_solicitud, decision)
+    except LookupError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"error": "NOT_FOUND", "message": str(exc)}
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"error": "BAD_REQUEST", "message": str(exc)}
+        )
+
+    return SolicitudCamaSchema.model_validate(solicitud)
+
