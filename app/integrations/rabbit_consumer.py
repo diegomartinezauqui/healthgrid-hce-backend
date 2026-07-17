@@ -33,13 +33,23 @@ async def start_core_bus_consumer() -> None:
         logger.error("❌ aio-pika no está instalado; no se puede consumir RabbitMQ.")
         return
 
-    connection = await aio_pika.connect_robust(
-        host=settings.RABBITMQ_HOST,
-        port=settings.RABBITMQ_PORT,
-        login=settings.RABBITMQ_USER,       # aio-pika escapa el usuario (email) por nosotros
-        password=settings.RABBITMQ_PASSWORD,
-        virtualhost=settings.RABBITMQ_VHOST,
-    )
+    try:
+        connection = await aio_pika.connect_robust(
+            host=settings.RABBITMQ_HOST,
+            port=settings.RABBITMQ_PORT,
+            login=settings.RABBITMQ_USER,       # aio-pika escapa el usuario (email) por nosotros
+            password=settings.RABBITMQ_PASSWORD,
+            virtualhost=settings.RABBITMQ_VHOST,
+        )
+    except Exception as exc:
+        logger.warning(
+            "⚠️ No se pudo conectar a RabbitMQ (el consumer del Core no arranca). "
+            "Es normal en local si el usuario '%s' aun no fue registrado en el broker de RabbitMQ: %s",
+            settings.RABBITMQ_USER,
+            exc
+        )
+        return
+
     channel = await connection.channel()
     await channel.set_qos(prefetch_count=10)
 
