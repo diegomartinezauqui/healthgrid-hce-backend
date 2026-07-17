@@ -48,13 +48,22 @@ async def obtener_cobertura(
             detail={"error": "NOT_FOUND", "message": "El recurso solicitado no fue encontrado."},
         )
 
+    plan_code = None
+    if cobertura.planId:
+        try:
+            plan_code = int(cobertura.planId)
+        except ValueError:
+            pass
+
     response_data = InsuranceResponse(
         id_paciente=cobertura.id_paciente,
         entidadFinanciadoraId=cobertura.entidadFinanciadoraId,
         nombre_obra_social=cobertura.nombre_obra_social,
         nombre_plan=cobertura.nombre_plan,
         planId=cobertura.planId,
-        numero_afiliado=cobertura.numero_afiliado
+        numero_afiliado=cobertura.numero_afiliado,
+        id_obra_social=cobertura.entidadFinanciadoraId,
+        codigo_plan=plan_code
     )
     return response_data
 

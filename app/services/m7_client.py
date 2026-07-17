@@ -347,3 +347,58 @@ async def buscar_planes(
     except Exception as exc:
         logger.error("❌ [M7] Error de conexión con M7 (Facturación) al buscar planes: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 7 (Facturación): {exc}") from exc
+
+
+async def notificar_episodio_cerrado(
+    *,
+    id_episodio: int,
+    id_paciente: int,
+    tipo_episodio: str,
+    fecha_cierre: str,
+    token: Optional[str] = None,
+) -> dict:
+    """
+    Notifica a M7 (Facturación) que un episodio ha sido cerrado definitivamente y está listo para facturar.
+    POST /api/billing/integracion/hce/episodios-cerrados
+    """
+    try:
+        import httpx
+        # El gateway expone M7 en settings.M7_BASE_URL (https://gw.healthcare.cantero.ar/api/billing)
+        url = f"{settings.M7_BASE_URL.rstrip('/')}/integracion/hce/episodios-cerrados"
+        
+        headers = {
+            "Content-Type": "application/json"
+        }
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+            
+        payload = {
+            "eventId": f"HCE-EPISODIO-CERRADO-{id_episodio}",
+            "episodioIdExterno": id_episodio,
+            "pacienteIdExterno": id_paciente,
+            "tipoEpisodio": tipo_episodio.upper(),
+            "fechaCierre": fecha_cierre,
+            "moduloOrigen": "MODULO_1_HCE"
+        }
+        
+        logger.warning("📡 [M7] Notificando episodio cerrado REST a %s: %s", url, payload)
+        
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(url, json=payload, headers=headers)
+            
+        if response.status_code in (200, 201, 202):
+            logger.warning("✅ [M7] Cierre de episodio notificado a M7 exitosamente: %s", response.status_code)
+            try:
+                return response.json()
+            except Exception:
+                return {"status": "success", "message": "El episodio cerrado fue aceptado para procesamiento"}
+        else:
+            logger.error("❌ [M7] M7 rechazó la notificación de cierre: %s", response.text)
+            return {"status": "error", "code": response.status_code, "text": response.text}
+            
+    except ImportError:
+        logger.warning("⚠️ [M7] httpx no disponible. Simulando notificación de cierre a M7.")
+        return {"status": "simulated", "eventId": f"HCE-EPISODIO-CERRADO-{id_episodio}"}
+    except Exception as exc:
+        logger.error("❌ [M7] Error de conexión con M7 al notificar cierre: %s", exc)
+        return {"status": "error", "message": str(exc)}

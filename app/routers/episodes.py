@@ -21,6 +21,7 @@ from app.schemas.episodio import (
     EpisodioListResponse,
     EpisodioResumen,
     EpisodioUpdate,
+    M7ActoMedicoResponse,
 )
 from app.services import episodio_service
 
@@ -171,10 +172,16 @@ async def actualizar_episodio(
     id_paciente: int,
     id_episodio: int,
     body: EpisodioUpdate,
+    request: Request,
     db: DbSession,
     _user=Depends(require_permission("hce:episodes:write")),
 ):
-    episodio = await episodio_service.actualizar_episodio(db, id_paciente, id_episodio, body)
+    auth_header = request.headers.get("Authorization")
+    token_auth = auth_header.replace("Bearer ", "") if auth_header else None
+
+    episodio = await episodio_service.actualizar_episodio(
+        db, id_paciente, id_episodio, body, token_auth=token_auth
+    )
     if not episodio:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -183,14 +190,15 @@ async def actualizar_episodio(
     return EpisodioDetalle.model_validate(episodio)
 
 
+from typing import List
+
 @router.get(
     "/patients/{id_paciente}/episodes/{id_episodio}/medical-acts",
-    response_model=ActoMedicoListResponse,
+    response_model=List[M7ActoMedicoResponse],
     tags=["Atención Clínica — Actos Médicos"],
     summary="Listar actos médicos de un episodio",
     description=(
-        "Lista todos los actos médicos registrados dentro de un episodio. "
-        "Cada acto incluye el codigo_nomenclador para facturación."
+        "Lista todos los actos médicos registrados dentro de un episodio con el formato esperado por Facturación (M7)."
     ),
     responses={
         401: {"model": ErrorResponse},
@@ -206,14 +214,20 @@ async def listar_actos_medicos(
 ):
     actos = await episodio_service.get_actos_medicos_episodio(db, id_paciente, id_episodio)
 
-    return ActoMedicoListResponse(
-        id_episodio=id_episodio,
-        total=len(actos),
-        actos_medicos=[
-            ActoMedicoSchema.model_validate(am)
-            for am in actos
-        ],
-    )
+    return [
+        M7ActoMedicoResponse(
+            idActoMedico=am.id_acto_medico,
+            episodioId=am.id_episodio,
+            pacienteId=id_paciente,
+            codigoPrestacion=am.codigo_nomenclador,
+            descripcion=am.descripcion or str(am.tipo),
+            cantidad=am.cantidad,
+            fechaRealizacion=am.fecha_realizacion,
+            estado="REALIZADO",
+            profesionalId=am.id_profesional
+        )
+        for am in actos
+    ]
 
 
 @router.post(
