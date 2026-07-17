@@ -158,3 +158,62 @@ async def solicitar_internacion(
     except Exception as exc:
         logger.error("❌ [M6] Error de conexión con M6: %s", exc)
         raise RuntimeError(f"No se pudo conectar con el Módulo 6 (Camas): {exc}") from exc
+
+
+async def solicitar_cirugia_urgente(
+    payload: dict,
+    token: Optional[str] = None,
+) -> dict:
+    """
+    Enviar una solicitud de cirugía urgente al Módulo 6 (Camas/Quirófanos).
+    REST síncrono.
+    """
+    try:
+        import httpx
+        from datetime import datetime
+
+        url = f"{settings.M6_BASE_URL.rstrip('/')}/v1/webhooks/hce/cirugia-urgente"
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        logger.warning("📡 [M6] Enviando cirugía urgente REST a %s: %s", url, payload)
+
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            response = await client.post(
+                url,
+                json=payload,
+                headers=headers,
+            )
+
+        if response.status_code in (200, 201):
+            logger.warning("✅ [M6] Cirugía urgente registrada en M6 exitosamente.")
+            return response.json()
+        else:
+            logger.error("❌ [M6] Error al registrar cirugía urgente: %s", response.text)
+            raise RuntimeError(f"M6 rechazó la cirugía con status {response.status_code}: {response.text}")
+
+    except ImportError:
+        logger.warning("⚠️ [M6] httpx no disponible. Simulando respuesta de cirugía urgente.")
+        from datetime import datetime
+        return {
+            "mensaje": "Reserva urgente creada (simulada)",
+            "reserva": {
+                "id": 999,
+                "cama_id": 99,
+                "paciente_id": payload.get("paciente_id"),
+                "prioridad": "URGENTE",
+                "origen": "EMERGENCIA",
+                "estado": "RESERVADA",
+                "fecha_hora_inicio": payload.get("fecha_hora_inicio"),
+                "fecha_hora_fin_estimada": payload.get("fecha_hora_fin_estimada"),
+                "observaciones": payload.get("diagnostico"),
+                "created_at": datetime.utcnow().isoformat() + "Z"
+            },
+            "reservas_desplazadas": []
+        }
+    except RuntimeError:
+        raise
+    except Exception as exc:
+        logger.error("❌ [M6] Error de conexión para cirugía urgente: %s", exc)
+        raise RuntimeError(f"No se pudo conectar con M6 para la cirugía urgente: {exc}") from exc

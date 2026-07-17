@@ -21,6 +21,7 @@ from app.schemas.solicitud_cama import (
     SolicitudCamaListResponse,
     SolicitudCamaResolver,
     SolicitudCamaSchema,
+    CirugiaUrgenteCreate,
 )
 from app.services import solicitud_cama_service
 
@@ -221,7 +222,7 @@ async def webhook_resolucion_cama_legacy(
         )
 
     # Mapear decisión de forma extremadamente robusta
-    decision_val = body.get("decision") or body.get("accion") or body.get("estado") or ""
+    decision_val = body.get("decision") or body.get("resultado") or body.get("accion") or body.get("estado") or ""
     decision_raw = str(decision_val).lower()
     decision = "aceptada" if any(x in decision_raw for x in ["aprobada", "aceptada", "aprobar"]) else "rechazada"
 
@@ -253,4 +254,59 @@ async def webhook_resolucion_cama_legacy(
         )
 
     return SolicitudCamaSchema.model_validate(solicitud)
+
+
+from fastapi import Request
+
+@router.post(
+    "/patients/{id_paciente}/episodes/{id_episodio}/cirugias-urgentes",
+    status_code=status.HTTP_201_CREATED,
+    summary="Solicitar cirugía urgente a M6 (REST Proxy)",
+    description="Envía una solicitud de cirugía urgente al Módulo 6 de forma sincrónica y devuelve la respuesta."
+)
+async def solicitar_cirugia_urgente_endpoint(
+    id_paciente: int,
+    id_episodio: int,
+    body: CirugiaUrgenteCreate,
+    request: Request,
+    _user=Depends(require_permission("hce:internacion:write")),
+):
+    from app.services import m6_client
+    from datetime import datetime, timezone
+    
+    # Obtener el ID del médico autenticado o fallback
+    medico_solicitante_id = 0
+    if hasattr(_user, "id"):
+        medico_solicitante_id = _user.id
+    elif isinstance(_user, dict) and "id" in _user:
+        medico_solicitante_id = _user["id"]
+        
+    # Generar ID de solicitud único e idempotente
+    import uuid
+    solicitud_urgencia_hce_id = f"URG-{id_paciente}-{id_episodio}-{uuid.uuid4().hex[:8].upper()}"
+
+    payload = {
+        "solicitud_urgencia_hce_id": solicitud_urgencia_hce_id,
+        "paciente_id": id_paciente,
+        "medico_cirujano_id": body.medico_cirujano_id,
+        "medico_solicitante_id": medico_solicitante_id or 1,
+        "fecha_hora_inicio": body.fecha_hora_inicio.isoformat().replace("+00:00", "Z"),
+        "fecha_hora_fin_estimada": body.fecha_hora_fin_estimada.isoformat().replace("+00:00", "Z"),
+        "diagnostico": body.diagnostico or "Urgencia quirúrgica",
+        "hospital_id": body.hospital_id or "1",
+        "specialty_id": body.specialty_id,
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    }
+
+    auth_header = request.headers.get("Authorization")
+    token = auth_header.replace("Bearer ", "") if auth_header else None
+
+    try:
+        resultado = await m6_client.solicitar_cirugia_urgente(payload, token=token)
+        return resultado
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail={"error": "M6_ERROR", "message": str(exc)}
+        )
 

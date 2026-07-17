@@ -91,32 +91,36 @@ async def resolver_solicitud(
         await db.flush()
         return solicitud
 
-    # decision == "aceptada"
-    if not body.cama:
-        raise ValueError("Para aceptar la solicitud se requiere la cama asignada por M6.")
-
     solicitud.estado = "aceptada"
-    solicitud.cama = body.cama
-    solicitud.habitacion = body.habitacion
+    if body.cama:
+        solicitud.cama = body.cama
+        solicitud.habitacion = body.habitacion
 
-    # Si es internación inicial, el MISMO episodio pasa a internación
-    if solicitud.tipo == "internacion":
-        episodio = await db.get(Episodio, solicitud.id_episodio)
-        if episodio is not None:
-            episodio.tipo = TipoEpisodio.INTERNACION
-            episodio.estado = EstadoEpisodio.OPEN
+        # Si es internación inicial, el MISMO episodio pasa a internación
+        if solicitud.tipo == "internacion":
+            episodio = await db.get(Episodio, solicitud.id_episodio)
+            if episodio is not None:
+                episodio.tipo = TipoEpisodio.INTERNACION
+                episodio.estado = EstadoEpisodio.OPEN
 
-    # Tanto internación como pase generan un movimiento de cama
-    movimiento = MovimientoInternacion(
-        id_episodio=solicitud.id_episodio,
-        id_paciente=solicitud.id_paciente,
-        sector=solicitud.sector or "Sin especificar",
-        habitacion=body.habitacion,
-        cama=body.cama,
-        fecha_ingreso=datetime.utcnow(),
-        medico_solicitante="M6 (Camas)",
-    )
-    db.add(movimiento)
+        # Tanto internación como pase generan un movimiento de cama
+        movimiento = MovimientoInternacion(
+            id_episodio=solicitud.id_episodio,
+            id_paciente=solicitud.id_paciente,
+            sector=solicitud.sector or "Sin especificar",
+            habitacion=body.habitacion,
+            cama=body.cama,
+            fecha_ingreso=datetime.utcnow(),
+            medico_solicitante="M6 (Camas)",
+        )
+        db.add(movimiento)
+    else:
+        # Si no viene cama aún, simplemente marcamos como aceptada administrativamente
+        if solicitud.tipo == "internacion":
+            episodio = await db.get(Episodio, solicitud.id_episodio)
+            if episodio is not None:
+                episodio.tipo = TipoEpisodio.INTERNACION
+                episodio.estado = EstadoEpisodio.OPEN
     await db.flush()
     return solicitud
 

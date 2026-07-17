@@ -176,9 +176,10 @@ async def _dispatch(event_name: str, payload: dict, sobre: dict) -> None:
             )
             return
 
-        # M6 puede enviar la decisión en mayúsculas (APROBADA/RECHAZADA)
-        decision_raw = (payload.get("decision") or "").lower()
-        decision = "aceptada" if "aprobada" in decision_raw or "aceptada" in decision_raw else "rechazada"
+        # M6 puede enviar la decisión en mayúsculas (APROBADA/RECHAZADA) bajo 'decision' o 'resultado'
+        decision_val = payload.get("decision") or payload.get("resultado") or ""
+        decision_raw = str(decision_val).lower()
+        decision = "aceptada" if any(x in decision_raw for x in ["aprobada", "aceptada", "aprobar"]) else "rechazada"
 
         # Extraer ID numérico si viene como string tipo 'HCE-SOL-17'
         if isinstance(id_solicitud, str):
